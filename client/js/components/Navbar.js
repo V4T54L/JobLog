@@ -11,18 +11,16 @@ export const Navbar = () => {
         const loggedIn = isLoggedIn();
 
         nav.innerHTML = `
-            <div class="text-xl font-bold text-gray-800 dark:text-white">
-                <a href="/" data-link>Job Tracker</a>
-            </div>
+            <a href="/" data-link class="text-xl font-bold text-gray-800 dark:text-white">Job Tracker</a>
             <div class="flex items-center space-x-4">
-                <a href="/dashboard" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Dashboard</a>
-                <a href="/applications" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Applications</a>
-                <a href="/blog" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Blog</a>
                 ${loggedIn ? `
+                    <a href="/dashboard" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Dashboard</a>
+                    <a href="/applications" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Applications</a>
+                    <a href="/blog" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Blog</a>
                     <button id="logout-btn" class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Logout</button>
                 ` : `
                     <a href="/login" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Login</a>
-                    <a href="/register" data-link class="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700">Register</a>
+                    <a href="/register" data-link class="text-gray-600 dark:text-gray-300 hover:text-blue-500">Register</a>
                 `}
                 <button id="theme-switcher" class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <span class="theme-icon">${currentTheme === 'dark' ? '☀️' : '🌙'}</span>
@@ -32,7 +30,7 @@ export const Navbar = () => {
 
         nav.querySelector('#theme-switcher').addEventListener('click', () => {
             toggleTheme();
-            render(); // Re-render to update the icon
+            render(); // Re-render to update icon
         });
 
         if (loggedIn) {
@@ -43,8 +41,7 @@ export const Navbar = () => {
         }
     };
 
-    subscribe(render); // Re-render whenever auth state changes
+    subscribe(render); // Re-render when auth state changes
     render(); // Initial render
     return nav;
 };
-

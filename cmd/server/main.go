@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"job-app-tracker/internal/handler"
 	"job-app-tracker/internal/repository/postgres"
@@ -13,39 +12,47 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/joho/godotenv/autoload" // Load .env file automatically
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	// --- Database Connection ---
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://user:password@localhost:5432/job_tracker_db?sslmode=disable"
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, using environment variables")
 	}
 
-	// Run Migrations
-	runMigrations(dbURL)
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
 
-	// Connect to DB with sqlx
-	db, err := sqlx.Connect("postgres", dbURL)
+	runMigrations(databaseURL)
+
+	db, err := sqlx.Connect("postgres", databaseURL)
 	if err != nil {
-		log.Fatalf("Could not connect to the database: %v", err)
+		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	defer db.Close()
 
-	// --- Dependency Injection ---
+	// Repositories
 	userRepo := postgres.NewPostgresUserRepository(db)
+	companyRepo := postgres.NewPostgresCompanyRepository(db) // Corrected from ApplicationRepository
+	roleRepo := postgres.NewPostgresRoleRepository(db)
+	appRepo := postgres.NewPostgresApplicationRepository(db) // Corrected from AppRepository
+
+	// Use Cases
 	userUseCase := usecase.NewUserService(userRepo)
+	appUseCase := usecase.NewApplicationService(appRepo, companyRepo, roleRepo)
 
-	// --- Router Setup ---
-	router := handler.NewRouter(userUseCase)
+	// Router
+	router := handler.NewRouter(userUseCase, appUseCase)
 
-	// --- Start Server ---
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
 	log.Printf("Server starting on port %s", port)
 	if err := router.Start(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
@@ -53,16 +60,18 @@ func main() {
 }
 
 func runMigrations(databaseURL string) {
-	migrationPath := "file://migrations"
-	m, err := migrate.New(migrationPath, databaseURL)
+	migrationsPath := "file://migrations"
+	m, err := migrate.New(migrationsPath, databaseURL)
 	if err != nil {
-		log.Fatalf("Could not create migrate instance: %v", err)
+		log.Fatalf("Failed to create migrate instance: %v", err)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("Could not apply migrations: %v", err)
+		log.Fatalf("Failed to run migrations: %v", err)
+	} else if err == migrate.ErrNoChange {
+		log.Println("No new migrations to apply.")
+	} else {
+		log.Println("Migrations applied successfully.")
 	}
-
-	fmt.Println("Migrations applied successfully")
 }
 
