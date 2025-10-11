@@ -1,50 +1,68 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
+	"job-app-tracker/internal/handler"
+	"job-app-tracker/internal/repository/postgres"
+	"job-app-tracker/internal/usecase"
 	"log"
-	"net/http"
 	"os"
-	"path/filepath"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/joho/godotenv/autoload" // Load .env file automatically
+	_ "github.com/lib/pq"
 )
 
-// spaHandler serves the single page application.
-// It serves static files from the 'client' directory, and for any path that
-// doesn't match a file, it serves the 'index.html' file. This is necessary
-// for client-side routing to work correctly.
-func spaHandler(staticPath, indexPath string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Get the absolute path to the file
-		path := filepath.Join(staticPath, r.URL.Path)
+func main() {
+	// --- Database Connection ---
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://user:password@localhost:5432/job_tracker_db?sslmode=disable"
+	}
 
-		// Check if the file exists
-		_, err := os.Stat(path)
-		if os.IsNotExist(err) {
-			// File does not exist, serve index.html
-			http.ServeFile(w, r, filepath.Join(staticPath, indexPath))
-			return
-		} else if err != nil {
-			// If there was another error, return an internal server error
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	// Run Migrations
+	runMigrations(dbURL)
 
-		// Otherwise, serve the static file
-		http.FileServer(http.Dir(staticPath)).ServeHTTP(w, r)
+	// Connect to DB with sqlx
+	db, err := sqlx.Connect("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Could not connect to the database: %v", err)
+	}
+	defer db.Close()
+
+	// --- Dependency Injection ---
+	userRepo := postgres.NewPostgresUserRepository(db)
+	userUseCase := usecase.NewUserService(userRepo)
+
+	// --- Router Setup ---
+	router := handler.NewRouter(userUseCase)
+
+	// --- Start Server ---
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Server starting on port %s", port)
+	if err := router.Start(":" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
-func main() {
-	// For now, we just serve the frontend SPA.
-	// API routes will be added later.
-	mux := http.NewServeMux()
-
-	// Serve static files and handle SPA routing
-	spa := spaHandler("client", "index.html")
-	mux.Handle("/", spa)
-
-	log.Println("Server starting on :8080...")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatalf("Could not start server: %s\n", err)
+func runMigrations(databaseURL string) {
+	migrationPath := "file://migrations"
+	m, err := migrate.New(migrationPath, databaseURL)
+	if err != nil {
+		log.Fatalf("Could not create migrate instance: %v", err)
 	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Could not apply migrations: %v", err)
+	}
+
+	fmt.Println("Migrations applied successfully")
 }
 
