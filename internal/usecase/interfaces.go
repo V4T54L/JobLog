@@ -27,7 +27,11 @@ type BlogUseCase interface {
 	ToggleLike(userID int64, contentType domain.ContentType, contentID int64) (bool, error)
 }
 
-// UserProfile is a DTO for the user profile view
+type AnalyticsUseCase interface {
+	GetDashboardAnalytics(userID int64) (*domain.DashboardAnalytics, error)
+}
+
+// UserProfile is a DTO for user profile data
 type UserProfile struct {
 	User           *domain.User         `json:"user"`
 	Posts          []domain.BlogPost    `json:"posts"`

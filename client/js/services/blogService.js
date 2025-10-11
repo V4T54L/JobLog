@@ -1,65 +1,40 @@
-import { getToken } from '../state/authState.js';
+import { authorizedFetch, handleResponse } from './applicationService.js';
 
 const API_BASE_URL = '/api';
-
-async function handleResponse(response) {
-    if (response.status === 204) {
-        return null;
-    }
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.message || 'An error occurred');
-    }
-    return data;
-}
-
-async function authorizedFetch(url, options = {}) {
-    const token = getToken();
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers,
-    };
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(url, { ...options, headers });
-    return handleResponse(response);
-}
 
 export const BlogService = {
     getPublicPosts: async (params = {}) => {
         const query = new URLSearchParams(params).toString();
-        const response = await fetch(`${API_BASE_URL}/blog/posts?${query}`);
+        const response = await fetch(`${API_BASE_URL}/blog?${query}`);
         return handleResponse(response);
     },
 
     getPublicPost: async (username, slug) => {
-        const response = await fetch(`${API_BASE_URL}/blog/posts/${username}/${slug}`);
+        const response = await fetch(`${API_BASE_URL}/blog/${username}/${slug}`);
         return handleResponse(response);
     },
 
     createPost: async (postData) => {
-        return authorizedFetch(`${API_BASE_URL}/blog/posts`, {
+        return authorizedFetch(`${API_BASE_URL}/blog`, {
             method: 'POST',
             body: JSON.stringify(postData),
         });
     },
 
     getComments: async (postId) => {
-        const response = await fetch(`${API_BASE_URL}/blog/posts/${postId}/comments`);
+        const response = await fetch(`${API_BASE_URL}/blog/${postId}/comments`);
         return handleResponse(response);
     },
 
     addComment: async (postId, commentData) => {
-        return authorizedFetch(`${API_BASE_URL}/blog/posts/${postId}/comments`, {
+        return authorizedFetch(`${API_BASE_URL}/blog/${postId}/comments`, {
             method: 'POST',
             body: JSON.stringify(commentData),
         });
     },
 
     toggleLike: async (likeData) => {
-        return authorizedFetch(`${API_BASE_URL}/blog/like`, {
+        return authorizedFetch(`${API_BASE_URL}/blog/toggle-like`, {
             method: 'POST',
             body: JSON.stringify(likeData),
         });

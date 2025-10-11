@@ -58,3 +58,8 @@ type FollowRepository interface {
 	GetFollowingCount(userID int64) (int, error)
 }
 
+type AnalyticsRepository interface {
+	GetApplicationCountsByStatus(userID int64) ([]domain.StatusCount, error)
+	GetApplicationCountsOverTime(userID int64) ([]domain.ApplicationsOverTime, error)
+}
+

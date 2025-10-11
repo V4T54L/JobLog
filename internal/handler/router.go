@@ -3,13 +3,12 @@ package handler
 import (
 	"job-app-tracker/internal/usecase"
 	"net/http"
-	"strings" // Added from attempted
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blogUC usecase.BlogUseCase) *echo.Echo {
+func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blogUC usecase.BlogUseCase, analyticsUC usecase.AnalyticsUseCase) *echo.Echo {
 	e := echo.New()
 
 	// Middleware
@@ -19,56 +18,75 @@ func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blo
 	// Serve static files for the frontend
 	e.Static("/", "client")
 
-	// API routes
-	api := e.Group("/api") // Changed variable name to api
-
 	// Handlers
 	authHandler := NewAuthHandler(userUC)
 	appHandler := NewApplicationHandler(appUC)
 	blogHandler := NewBlogHandler(blogUC)
-	userHandler := NewUserHandler(userUC) // Added from attempted
+	userHandler := NewUserHandler(userUC)
+	analyticsHandler := NewAnalyticsHandler(analyticsUC)
+
+	// API Routes
+	api := e.Group("/api")
 
 	// Auth routes
-	authGroup := api.Group("/auth")
-	authGroup.POST("/register", authHandler.Register)
-	authGroup.POST("/login", authHandler.Login)
-
-	// User routes (Added from attempted)
-	userGroup := api.Group("/users")
-	userGroup.GET("/:username/profile", userHandler.GetProfile, AuthMiddleware) // Auth is optional here, handled in handler
-	userGroup.POST("/:username/follow", userHandler.FollowUser, AuthMiddleware)
-	userGroup.DELETE("/:username/follow", userHandler.UnfollowUser, AuthMiddleware)
+	authAPI := api.Group("/auth")
+	authAPI.POST("/register", authHandler.Register)
+authAPI.POST("/login", authHandler.Login)
 
 	// Application routes (protected)
-	appGroup := api.Group("/applications", AuthMiddleware)
-	appGroup.POST("", appHandler.CreateApplication)
-	appGroup.GET("", appHandler.GetApplications)
-	appGroup.GET("/:id", appHandler.GetApplicationByID)
-	appGroup.PUT("/:id", appHandler.UpdateApplication)
-	appGroup.DELETE("/:id", appHandler.DeleteApplication)
+	appAPI := api.Group("/applications", AuthMiddleware)
+	appAPI.POST("", appHandler.CreateApplication)
+	appAPI.GET("", appHandler.GetApplications)
+	appAPI.GET("/:id", appHandler.GetApplicationByID)
+	appAPI.PUT("/:id", appHandler.UpdateApplication)
+	appAPI.DELETE("/:id", appHandler.DeleteApplication)
 
 	// Blog routes
-	blogGroup := api.Group("/blog")
-	blogPostsGroup := blogGroup.Group("/posts") // Refactored blog routes
+	blogAPI := api.Group("/blog")
+	blogAPI.GET("", blogHandler.GetPublicPosts) // Public list of posts
+	blogAPI.GET("/:username/:slug", blogHandler.GetPublicPost)
+	blogAPI.GET("/:postID/comments", blogHandler.GetCommentsForPost)
+	// Protected blog routes
+	blogAPI.POST("", blogHandler.CreatePost, AuthMiddleware)
+	blogAPI.POST("/:postID/comments", blogHandler.AddComment, AuthMiddleware)
+	blogAPI.POST("/toggle-like", blogHandler.ToggleLike, AuthMiddleware)
 
-	// Public blog routes
-	blogPostsGroup.GET("", blogHandler.GetPublicPosts)
-	blogPostsGroup.GET("/:username/:slug", blogHandler.GetPublicPost)
-	blogPostsGroup.GET("/:postID/comments", blogHandler.GetCommentsForPost)
+	// User/Profile routes
+	userAPI := api.Group("/users")
+	userAPI.GET("/:username/profile", userHandler.GetProfile)
+	// Protected user routes
+	userAPI.POST("/:username/follow", userHandler.FollowUser, AuthMiddleware)
+	userAPI.DELETE("/:username/follow", userHandler.UnfollowUser, AuthMiddleware)
 
-	// Authenticated blog routes
-	blogPostsGroup.POST("", blogHandler.CreatePost, AuthMiddleware)           // Added AuthMiddleware
-	blogPostsGroup.POST("/:postID/comments", blogHandler.AddComment, AuthMiddleware) // Added AuthMiddleware
-	blogGroup.POST("/like", blogHandler.ToggleLike, AuthMiddleware)           // Added AuthMiddleware
+	// Dashboard Routes (Protected)
+	dashboardAPI := api.Group("/dashboard", AuthMiddleware)
+	dashboardAPI.GET("/analytics", analyticsHandler.GetDashboardAnalytics)
 
-	// SPA Fallback - This should be the last route (Adopted attempted's cleaner approach)
-	e.GET("/*", func(c echo.Context) error {
-		// Don't fallback for API routes
-		if strings.HasPrefix(c.Request().URL.Path, "/api/") {
-			return echo.NewHTTPError(http.StatusNotFound, "API route not found")
+	// This is a more robust way to handle SPA fallback.
+	// It ensures that if a file exists (like main.js), it's served.
+	// If not, it serves index.html.
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   "client",
+		HTML5:  true,
+		Browse: false,
+		// Ignore API routes from being handled by static middleware
+		Skipper: func(c echo.Context) bool {
+			return len(c.Path()) > 4 && c.Path()[:4] == "/api"
+		},
+	}))
+
+	// Final fallback for any route that didn't match static files or API
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		if he, ok := err.(*echo.HTTPError); ok {
+			if he.Code == http.StatusNotFound {
+				if err := c.File("client/index.html"); err != nil {
+					c.Logger().Error(err)
+				}
+				return
+			}
 		}
-		return c.File("client/index.html")
-	})
+		e.DefaultHTTPErrorHandler(err, c)
+	}
 
 	return e
 }
