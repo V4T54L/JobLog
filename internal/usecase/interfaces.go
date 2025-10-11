@@ -8,10 +8,16 @@ type UserUseCase interface {
 }
 
 type ApplicationUseCase interface {
-	CreateApplication(userID int64, companyName, roleTitle, status, dateApplied string) (*domain.Application, error)
+	CreateApplication(userID int64, companyName, roleTitle, status, dateAppliedStr string) (*domain.Application, error)
 	GetApplications(userID int64) ([]domain.Application, error)
 	GetApplicationByID(id, userID int64) (*domain.Application, error)
-	UpdateApplication(id, userID int64, companyName, roleTitle, status, dateApplied string) (*domain.Application, error)
+	UpdateApplication(id, userID int64, companyName, roleTitle, status, dateAppliedStr string) (*domain.Application, error)
 	DeleteApplication(id, userID int64) error
+}
+
+type BlogUseCase interface {
+	CreatePost(userID int64, title, contentMd, contentHtml string, isPublic bool) (*domain.BlogPost, error)
+	GetPublicPost(username, slug string) (*domain.BlogPost, error)
+	GetPublicPosts() ([]domain.BlogPost, error)
 }
 

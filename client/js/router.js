@@ -5,6 +5,9 @@ import { RegisterView } from './views/auth/RegisterView.js';
 import { ApplicationListView } from './views/applications/ApplicationListView.js';
 import { ApplicationDetailView } from './views/applications/ApplicationDetailView.js';
 import { ApplicationFormView } from './views/applications/ApplicationFormView.js';
+import { BlogListView } from './views/blog/BlogListView.js';
+import { BlogPostDetailView } from './views/blog/BlogPostDetailView.js';
+import { BlogPostEditorView } from './views/blog/BlogPostEditorView.js';
 
 let mainContentContainer;
 
@@ -17,6 +20,9 @@ const routes = [
     { path: '/applications/new', view: ApplicationFormView },
     { path: '/applications/:id', view: ApplicationDetailView },
     { path: '/applications/:id/edit', view: ApplicationFormView },
+    { path: "/blog", view: BlogListView },
+    { path: "/blog/new", view: BlogPostEditorView },
+    { path: "/blog/:username/:slug", view: BlogPostDetailView },
 ];
 
 const pathToRegex = path => new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
@@ -60,8 +66,10 @@ export const initializeRouter = (container) => {
         if (e.target.matches('[data-link]')) {
             e.preventDefault();
             navigate(e.target.href);
+        } else if (e.target.closest("[data-link]")) {
+            e.preventDefault();
+            navigate(e.target.closest("[data-link]").href);
         }
     });
     handleRoute();
 };
-

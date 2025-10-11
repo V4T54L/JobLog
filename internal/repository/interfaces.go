@@ -30,3 +30,10 @@ type ApplicationNoteRepository interface {
 	GetAllForApplication(appID int64, userID int64) ([]domain.ApplicationNote, error)
 }
 
+type BlogPostRepository interface {
+	Create(post *domain.BlogPost) error
+	GetBySlugAndUser(slug string, username string) (*domain.BlogPost, error)
+	GetAllPublic() ([]domain.BlogPost, error)
+	IsSlugTaken(slug string, userID int64) (bool, error)
+}
+
