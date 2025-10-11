@@ -3,6 +3,7 @@ package handler
 import (
 	"job-app-tracker/internal/usecase"
 	"net/http"
+	"strings" // Added from attempted
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -11,6 +12,7 @@ import (
 func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blogUC usecase.BlogUseCase) *echo.Echo {
 	e := echo.New()
 
+	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
@@ -18,20 +20,27 @@ func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blo
 	e.Static("/", "client")
 
 	// API routes
-	apiGroup := e.Group("/api")
+	api := e.Group("/api") // Changed variable name to api
 
 	// Handlers
 	authHandler := NewAuthHandler(userUC)
 	appHandler := NewApplicationHandler(appUC)
 	blogHandler := NewBlogHandler(blogUC)
+	userHandler := NewUserHandler(userUC) // Added from attempted
 
 	// Auth routes
-	authGroup := apiGroup.Group("/auth")
+	authGroup := api.Group("/auth")
 	authGroup.POST("/register", authHandler.Register)
 	authGroup.POST("/login", authHandler.Login)
 
+	// User routes (Added from attempted)
+	userGroup := api.Group("/users")
+	userGroup.GET("/:username/profile", userHandler.GetProfile, AuthMiddleware) // Auth is optional here, handled in handler
+	userGroup.POST("/:username/follow", userHandler.FollowUser, AuthMiddleware)
+	userGroup.DELETE("/:username/follow", userHandler.UnfollowUser, AuthMiddleware)
+
 	// Application routes (protected)
-	appGroup := apiGroup.Group("/applications", AuthMiddleware)
+	appGroup := api.Group("/applications", AuthMiddleware)
 	appGroup.POST("", appHandler.CreateApplication)
 	appGroup.GET("", appHandler.GetApplications)
 	appGroup.GET("/:id", appHandler.GetApplicationByID)
@@ -39,36 +48,28 @@ func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blo
 	appGroup.DELETE("/:id", appHandler.DeleteApplication)
 
 	// Blog routes
-	blogGroup := apiGroup.Group("/blog")
+	blogGroup := api.Group("/blog")
+	blogPostsGroup := blogGroup.Group("/posts") // Refactored blog routes
 
 	// Public blog routes
-	blogGroup.GET("/posts", blogHandler.GetPublicPosts)
-	blogGroup.GET("/posts/:username/:slug", blogHandler.GetPublicPost)
-	blogGroup.GET("/posts/:postID/comments", blogHandler.GetCommentsForPost)
+	blogPostsGroup.GET("", blogHandler.GetPublicPosts)
+	blogPostsGroup.GET("/:username/:slug", blogHandler.GetPublicPost)
+	blogPostsGroup.GET("/:postID/comments", blogHandler.GetCommentsForPost)
 
 	// Authenticated blog routes
-	blogAuthGroup := blogGroup.Group("", AuthMiddleware)
-	blogAuthGroup.POST("/posts", blogHandler.CreatePost)
-	blogAuthGroup.POST("/posts/:postID/comments", blogHandler.AddComment)
-	blogAuthGroup.POST("/like", blogHandler.ToggleLike)
+	blogPostsGroup.POST("", blogHandler.CreatePost, AuthMiddleware)           // Added AuthMiddleware
+	blogPostsGroup.POST("/:postID/comments", blogHandler.AddComment, AuthMiddleware) // Added AuthMiddleware
+	blogGroup.POST("/like", blogHandler.ToggleLike, AuthMiddleware)           // Added AuthMiddleware
 
-	// SPA fallback: for any route not matched by the API, serve index.html
-	e.HTTPErrorHandler = func(err error, c echo.Context) {
-		code := http.StatusInternalServerError
-		if he, ok := err.(*echo.HTTPError); ok {
-			code = he.Code
+	// SPA Fallback - This should be the last route (Adopted attempted's cleaner approach)
+	e.GET("/*", func(c echo.Context) error {
+		// Don't fallback for API routes
+		if strings.HasPrefix(c.Request().URL.Path, "/api/") {
+			return echo.NewHTTPError(http.StatusNotFound, "API route not found")
 		}
-		if code == http.StatusNotFound && c.Request().Method == http.MethodGet {
-			// Check if it's not an API route
-			if len(c.Path()) < 4 || c.Path()[:4] != "/api" {
-				if err := c.File("client/index.html"); err != nil {
-					c.Logger().Error(err)
-				}
-				return
-			}
-		}
-		e.DefaultHTTPErrorHandler(err, c)
-	}
+		return c.File("client/index.html")
+	})
 
 	return e
 }
+

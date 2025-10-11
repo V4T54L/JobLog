@@ -8,6 +8,7 @@ import { ApplicationFormView } from './views/applications/ApplicationFormView.js
 import { BlogListView } from './views/blog/BlogListView.js';
 import { BlogPostDetailView } from './views/blog/BlogPostDetailView.js';
 import { BlogPostEditorView } from './views/blog/BlogPostEditorView.js';
+import { ProfileView } from './views/profile/ProfileView.js'; // Added from attempted
 
 let mainContentContainer;
 
@@ -23,9 +24,10 @@ const routes = [
     { path: "/blog", view: BlogListView },
     { path: "/blog/new", view: BlogPostEditorView },
     { path: "/blog/:username/:slug", view: BlogPostDetailView },
+    { path: '/profile/:username', view: ProfileView }, // Added from attempted
 ];
 
-const pathToRegex = path => new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
+const pathToRegex = path => new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "(.+)") + "$"); // Adopted attempted's regex
 
 const getParams = match => {
     const values = match.result.slice(1);
@@ -66,10 +68,11 @@ export const initializeRouter = (container) => {
         if (e.target.matches('[data-link]')) {
             e.preventDefault();
             navigate(e.target.href);
-        } else if (e.target.closest("[data-link]")) {
+        } else if (e.target.closest("[data-link]")) { // Kept original's robust click handler
             e.preventDefault();
             navigate(e.target.closest("[data-link]").href);
         }
     });
     handleRoute();
 };
+

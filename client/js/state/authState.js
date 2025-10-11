@@ -1,36 +1,44 @@
 let token = localStorage.getItem('jwt_token');
-let user = null; // In a real app, you might fetch user details and store them here
+let user = JSON.parse(localStorage.getItem('current_user')); // Updated to store user object
 
 const subscribers = new Set();
 
-const notify = () => {
+function notify() { // Changed to function declaration
     subscribers.forEach(callback => callback());
-};
+}
 
-export const setToken = (newToken) => {
+export function setToken(newToken, newUser) { // Updated signature to include newUser
     token = newToken;
-    if (newToken) {
-        localStorage.setItem('jwt_token', newToken);
+    user = newUser;
+    if (token && user) {
+        localStorage.setItem('jwt_token', token);
+        localStorage.setItem('current_user', JSON.stringify(user)); // Store user object
     } else {
         localStorage.removeItem('jwt_token');
+        localStorage.removeItem('current_user'); // Remove user object
     }
     notify();
-};
+}
 
-export const getToken = () => {
+export function getToken() { // Changed to function declaration
     return token;
-};
+}
 
-export const isLoggedIn = () => {
+export function getUser() { // Added from attempted
+    return user;
+}
+
+export function isLoggedIn() { // Changed to function declaration
     return !!token;
-};
+}
 
-export const logout = () => {
-    setToken(null);
-};
+export function logout() { // Changed to function declaration
+    setToken(null, null); // Updated to clear user object
+}
 
-export const subscribe = (callback) => {
+export function subscribe(callback) { // Changed to function declaration
     subscribers.add(callback);
-    return () => subscribers.delete(callback); // Unsubscribe function
-};
+    // Return an unsubscribe function
+    return () => subscribers.delete(callback);
+}
 

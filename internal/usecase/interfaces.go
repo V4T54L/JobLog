@@ -4,7 +4,10 @@ import "job-app-tracker/internal/domain"
 
 type UserUseCase interface {
 	Register(username, email, password string) (*domain.User, error)
-	Login(email, password string) (string, error)
+	Login(email, password string) (*domain.User, string, error) // Updated return signature
+	GetProfile(username string, viewerID int64) (*UserProfile, error) // Added from attempted
+	FollowUser(followerID int64, followeeUsername string) error       // Added from attempted
+	UnfollowUser(followerID int64, followeeUsername string) error     // Added from attempted
 }
 
 type ApplicationUseCase interface {
@@ -23,3 +26,13 @@ type BlogUseCase interface {
 	GetCommentsForPost(postID int64) ([]*domain.Comment, error)
 	ToggleLike(userID int64, contentType domain.ContentType, contentID int64) (bool, error)
 }
+
+// UserProfile is a DTO for the user profile view (Added from attempted)
+type UserProfile struct {
+	User           *domain.User       `json:"user"`
+	Posts          []*domain.BlogPost `json:"posts"`
+	IsFollowing    bool               `json:"isFollowing"`
+	FollowerCount  int                `json:"followerCount"`
+	FollowingCount int                `json:"followingCount"`
+}
+

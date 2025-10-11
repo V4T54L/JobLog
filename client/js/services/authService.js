@@ -1,12 +1,6 @@
-const API_BASE_URL = '/api';
+import { handleResponse } from './utils.js'; // Changed to import handleResponse
 
-async function handleResponse(response) {
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-}
+const API_BASE_URL = '/api';
 
 export const AuthService = {
     login: async (email, password) => {

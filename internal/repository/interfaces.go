@@ -34,6 +34,7 @@ type BlogPostRepository interface {
 	Create(post *domain.BlogPost) error
 	GetBySlugAndUser(slug string, username string) (*domain.BlogPost, error)
 	GetAllPublic() ([]*domain.BlogPost, error)
+	GetPublicPostsByUserID(userID int64) ([]*domain.BlogPost, error) // Added from attempted
 	IsSlugTaken(slug string, userID int64) (bool, error)
 }
 
@@ -48,3 +49,12 @@ type LikeRepository interface {
 	Delete(userID int64, contentType domain.ContentType, contentID int64) error
 	Get(userID int64, contentType domain.ContentType, contentID int64) (*domain.Like, error)
 }
+
+type FollowRepository interface { // Added from attempted
+	Create(follow *domain.Follow) error
+	Delete(followerID, followeeID int64) error
+	Exists(followerID, followeeID int64) (bool, error)
+	GetFollowerCount(userID int64) (int, error)
+	GetFollowingCount(userID int64) (int, error)
+}
+

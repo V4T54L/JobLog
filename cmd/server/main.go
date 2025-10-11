@@ -13,13 +13,14 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/lib/pq" // Changed from pgx/v5/stdlib to lib/pq
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	err := godotenv.Load()
+	if err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
 
@@ -30,7 +31,7 @@ func main() {
 
 	runMigrations(databaseURL)
 
-	db, err := sqlx.Connect("pgx", databaseURL)
+	db, err := sqlx.Connect("postgres", databaseURL) // Changed from "pgx" to "postgres"
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
@@ -38,20 +39,21 @@ func main() {
 
 	// Repositories
 	userRepo := postgres.NewPostgresUserRepository(db)
-	companyRepo := postgres.NewPostgresCompanyRepository(db) // Kept original for CompanyRepository
+	companyRepo := postgres.NewPostgresCompanyRepository(db)
 	roleRepo := postgres.NewPostgresRoleRepository(db)
-	appRepo := postgres.NewPostgresApplicationRepository(db) // Kept original for ApplicationRepository
+	appRepo := postgres.NewPostgresApplicationRepository(db) // Kept original name for ApplicationRepository
 	blogRepo := postgres.NewPostgresBlogPostRepository(db)
 	commentRepo := postgres.NewPostgresCommentRepository(db)
 	likeRepo := postgres.NewPostgresLikeRepository(db)
+	followRepo := postgres.NewPostgresFollowRepository(db) // Added from attempted
 
 	// Use Cases
-	userUC := usecase.NewUserService(userRepo)
+	userUC := usecase.NewUserService(userRepo, blogRepo, followRepo) // Updated dependencies
 	appUC := usecase.NewApplicationService(appRepo, companyRepo, roleRepo)
 	blogUC := usecase.NewBlogService(blogRepo, commentRepo, likeRepo)
 
 	// Router
-	e := handler.NewRouter(userUC, appUC, blogUC)
+	router := handler.NewRouter(userUC, appUC, blogUC) // Changed variable name to router
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -59,7 +61,7 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s", port)
-	if err := e.Start(":" + port); err != nil {
+	if err := router.Start(":" + port); err != nil { // Changed variable name to router
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
@@ -78,7 +80,7 @@ func runMigrations(databaseURL string) {
 	}
 
 	if err := m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
+		if errors.Is(err, migrate.ErrNoChange) { // Kept errors.Is for robustness
 			log.Println("No new migrations to apply.")
 		} else {
 			log.Fatalf("Could not run migrations: %v", err)
@@ -87,3 +89,4 @@ func runMigrations(databaseURL string) {
 		log.Println("Migrations applied successfully.")
 	}
 }
+
