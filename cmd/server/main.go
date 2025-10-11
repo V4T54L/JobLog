@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"job-app-tracker/internal/handler"
 	"job-app-tracker/internal/repository/postgres"
@@ -11,14 +13,13 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
 
@@ -29,26 +30,28 @@ func main() {
 
 	runMigrations(databaseURL)
 
-	db, err := sqlx.Connect("postgres", databaseURL)
+	db, err := sqlx.Connect("pgx", databaseURL)
 	if err != nil {
-		log.Fatalf("Could not connect to the database: %v", err)
+		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	defer db.Close()
 
 	// Repositories
 	userRepo := postgres.NewPostgresUserRepository(db)
-	companyRepo := postgres.NewPostgresCompanyRepository(db)
+	companyRepo := postgres.NewPostgresCompanyRepository(db) // Kept original for CompanyRepository
 	roleRepo := postgres.NewPostgresRoleRepository(db)
-	appRepo := postgres.NewPostgresApplicationRepository(db)
+	appRepo := postgres.NewPostgresApplicationRepository(db) // Kept original for ApplicationRepository
 	blogRepo := postgres.NewPostgresBlogPostRepository(db)
+	commentRepo := postgres.NewPostgresCommentRepository(db)
+	likeRepo := postgres.NewPostgresLikeRepository(db)
 
 	// Use Cases
-	userUseCase := usecase.NewUserService(userRepo)
-	appUseCase := usecase.NewApplicationService(appRepo, companyRepo, roleRepo)
-	blogUseCase := usecase.NewBlogService(blogRepo)
+	userUC := usecase.NewUserService(userRepo)
+	appUC := usecase.NewApplicationService(appRepo, companyRepo, roleRepo)
+	blogUC := usecase.NewBlogService(blogRepo, commentRepo, likeRepo)
 
 	// Router
-	e := handler.NewRouter(userUseCase, appUseCase, blogUseCase)
+	e := handler.NewRouter(userUC, appUC, blogUC)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -57,34 +60,30 @@ func main() {
 
 	log.Printf("Server starting on port %s", port)
 	if err := e.Start(":" + port); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
 func runMigrations(databaseURL string) {
-	migrationsPath := "file://migrations"
-	m, err := migrate.New(migrationsPath, databaseURL)
+	if databaseURL == "" {
+		log.Fatal("Cannot run migrations: DATABASE_URL is not set")
+	}
+
+	// The pgx driver used by sqlx uses a different DSN format than what migrate expects.
+	// We need to ensure the DSN is in the format: postgresql://user:password@host:port/dbname?sslmode=disable
+	// The connection string for pgx is usually in this format already.
+	m, err := migrate.New("file://migrations", databaseURL)
 	if err != nil {
 		log.Fatalf("Could not create migrate instance: %v", err)
 	}
 
 	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
-			log.Println("Database schema is up to date.")
+		if errors.Is(err, migrate.ErrNoChange) {
+			log.Println("No new migrations to apply.")
 		} else {
-			log.Fatalf("Could not apply migrations: %v", err)
+			log.Fatalf("Could not run migrations: %v", err)
 		}
 	} else {
-		log.Println("Database migrations applied successfully.")
-	}
-
-	// Check for migration errors that might not be caught by m.Up()
-	srcErr, dbErr := m.Close()
-	if srcErr != nil {
-		log.Printf("Migration source error: %v", srcErr)
-	}
-	if dbErr != nil {
-		log.Printf("Migration database error: %v", dbErr)
+		log.Println("Migrations applied successfully.")
 	}
 }
-
