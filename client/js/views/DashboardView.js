@@ -1,18 +1,23 @@
 import { DashboardService } from '../services/dashboardService.js';
+import { Spinner } from '../components/Spinner.js';
+import { Alert } from '../components/Alert.js';
+
+let statusChartInstance = null;
+let timelineChartInstance = null;
 
 const renderStatusChart = (canvas, data) => {
+    if (statusChartInstance) {
+        statusChartInstance.destroy();
+    }
     const ctx = canvas.getContext('2d');
-    const labels = data.map(d => d.status);
-    const counts = data.map(d => d.count);
-
-    new Chart(ctx, {
+    statusChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: data.map(d => d.status),
             datasets: [{
                 label: '# of Applications',
-                data: counts,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                data: data.map(d => d.count),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
             }]
@@ -33,17 +38,17 @@ const renderStatusChart = (canvas, data) => {
 };
 
 const renderTimelineChart = (canvas, data) => {
+    if (timelineChartInstance) {
+        timelineChartInstance.destroy();
+    }
     const ctx = canvas.getContext('2d');
-    const labels = data.map(d => d.date);
-    const counts = data.map(d => d.count);
-
-    new Chart(ctx, {
+    timelineChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: data.map(d => d.date),
             datasets: [{
                 label: 'Applications per Month',
-                data: counts,
+                data: data.map(d => d.count),
                 fill: false,
                 borderColor: 'rgb(75, 192, 192)',
                 tension: 0.1
@@ -64,58 +69,51 @@ const renderTimelineChart = (canvas, data) => {
     });
 };
 
-
 export const DashboardView = {
     render: async (container) => {
-        container.innerHTML = `
-            <div class="p-4 md:p-8">
-                <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-200">Dashboard</h1>
-                <div id="dashboard-content" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <p class="text-gray-600 dark:text-gray-400">Loading analytics...</p>
-                </div>
-            </div>
-        `;
+        container.innerHTML = '';
+        container.appendChild(Spinner());
 
         try {
             const analytics = await DashboardService.getAnalytics();
-            const dashboardContent = document.getElementById('dashboard-content');
-
-            if (!analytics || (!analytics.applicationsByStatus?.length && !analytics.applicationsOverTime?.length)) {
-                dashboardContent.innerHTML = `<p class="text-gray-600 dark:text-gray-400 col-span-full">No application data yet. Add some applications to see your analytics!</p>`;
-                return;
-            }
-
-            dashboardContent.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Applications by Status</h2>
-                    <div class="chart-container" style="position: relative; height:40vh;">
-                        <canvas id="statusChart"></canvas>
+            
+            container.innerHTML = `
+                <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Dashboard</h1>
+                ${(!analytics || !analytics.applications_by_status || analytics.applications_by_status.length === 0) ? `
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                        <p class="text-center text-gray-600 dark:text-gray-300">No application data yet. Add your first application to see analytics here!</p>
                     </div>
-                </div>
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Application Timeline</h2>
-                     <div class="chart-container" style="position: relative; height:40vh;">
-                        <canvas id="timelineChart"></canvas>
+                ` : `
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Applications by Status</h2>
+                            <div class="chart-container" style="position: relative; height:40vh;">
+                                <canvas id="status-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Application Timeline</h2>
+                            <div class="chart-container" style="position: relative; height:40vh;">
+                                <canvas id="timeline-chart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                `}
             `;
 
-            if (analytics.applicationsByStatus && analytics.applicationsByStatus.length > 0) {
-                const statusCanvas = document.getElementById('statusChart');
-                renderStatusChart(statusCanvas, analytics.applicationsByStatus);
-            } else {
-                 document.getElementById('statusChart').parentElement.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">No status data available.</p>`;
+            if (analytics && analytics.applications_by_status && analytics.applications_by_status.length > 0) {
+                const statusCanvas = document.getElementById('status-chart');
+                renderStatusChart(statusCanvas, analytics.applications_by_status);
             }
-
-            if (analytics.applicationsOverTime && analytics.applicationsOverTime.length > 0) {
-                const timelineCanvas = document.getElementById('timelineChart');
-                renderTimelineChart(timelineCanvas, analytics.applicationsOverTime);
-            } else {
-                document.getElementById('timelineChart').parentElement.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">No timeline data available.</p>`;
+            if (analytics && analytics.applications_over_time && analytics.applications_over_time.length > 0) {
+                const timelineCanvas = document.getElementById('timeline-chart');
+                renderTimelineChart(timelineCanvas, analytics.applications_over_time);
             }
 
         } catch (error) {
-            document.getElementById('dashboard-content').innerHTML = `<p class="text-red-500 col-span-full">Error loading dashboard: ${error.message}</p>`;
+            container.innerHTML = '';
+            container.appendChild(Alert('Could not load dashboard data. Please try again later.'));
         }
     }
 };
+

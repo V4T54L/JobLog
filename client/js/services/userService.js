@@ -1,20 +1,19 @@
-import { authorizedFetch, handleResponse } from './applicationService.js';
+import { authorizedFetch } from '../utils/api.js';
 
 const API_BASE_URL = '/api/users';
 
 export const UserService = {
-    getProfile: async (username) => {
-        // Profile can be public, but we send token if available to get `isFollowing` status
+    getProfile: (username) => {
         return authorizedFetch(`${API_BASE_URL}/${username}/profile`);
     },
 
-    follow: async (username) => {
+    follow: (username) => {
         return authorizedFetch(`${API_BASE_URL}/${username}/follow`, {
             method: 'POST',
         });
     },
 
-    unfollow: async (username) => {
+    unfollow: (username) => {
         return authorizedFetch(`${API_BASE_URL}/${username}/follow`, {
             method: 'DELETE',
         });

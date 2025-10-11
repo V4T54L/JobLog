@@ -8,17 +8,19 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+// NewRouter initializes and configures the main application router.
 func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blogUC usecase.BlogUseCase, analyticsUC usecase.AnalyticsUseCase) *echo.Echo {
 	e := echo.New()
 
-	// Middleware
+	// Global Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(RateLimiterMiddleware) // Apply rate limiting to all requests
 
 	// Serve static files for the frontend
 	e.Static("/", "client")
 
-	// Handlers
+	// API Handlers
 	authHandler := NewAuthHandler(userUC)
 	appHandler := NewApplicationHandler(appUC)
 	blogHandler := NewBlogHandler(blogUC)
@@ -27,61 +29,68 @@ func NewRouter(userUC usecase.UserUseCase, appUC usecase.ApplicationUseCase, blo
 
 	// API Routes
 	api := e.Group("/api")
+	{
+		// Auth routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/login", authHandler.Login)
+		}
 
-	// Auth routes
-	authAPI := api.Group("/auth")
-	authAPI.POST("/register", authHandler.Register)
-authAPI.POST("/login", authHandler.Login)
+		// Application routes (protected)
+		apps := api.Group("/applications", AuthMiddleware)
+		{
+			apps.POST("", appHandler.CreateApplication)
+			apps.GET("", appHandler.GetApplications)
+			apps.GET("/:id", appHandler.GetApplicationByID)
+			apps.PUT("/:id", appHandler.UpdateApplication)
+			apps.DELETE("/:id", appHandler.DeleteApplication)
+		}
 
-	// Application routes (protected)
-	appAPI := api.Group("/applications", AuthMiddleware)
-	appAPI.POST("", appHandler.CreateApplication)
-	appAPI.GET("", appHandler.GetApplications)
-	appAPI.GET("/:id", appHandler.GetApplicationByID)
-	appAPI.PUT("/:id", appHandler.UpdateApplication)
-	appAPI.DELETE("/:id", appHandler.DeleteApplication)
+		// Blog routes
+		blog := api.Group("/blog")
+		{
+			blog.GET("/public", blogHandler.GetPublicPosts)
+			blog.GET("/:username/:slug", blogHandler.GetPublicPost)
+			blog.GET("/:postID/comments", blogHandler.GetCommentsForPost)
 
-	// Blog routes
-	blogAPI := api.Group("/blog")
-	blogAPI.GET("", blogHandler.GetPublicPosts) // Public list of posts
-	blogAPI.GET("/:username/:slug", blogHandler.GetPublicPost)
-	blogAPI.GET("/:postID/comments", blogHandler.GetCommentsForPost)
-	// Protected blog routes
-	blogAPI.POST("", blogHandler.CreatePost, AuthMiddleware)
-	blogAPI.POST("/:postID/comments", blogHandler.AddComment, AuthMiddleware)
-	blogAPI.POST("/toggle-like", blogHandler.ToggleLike, AuthMiddleware)
+			// Protected blog routes
+			blog.POST("", blogHandler.CreatePost, AuthMiddleware)
+			blog.POST("/:postID/comments", blogHandler.AddComment, AuthMiddleware)
+			blog.POST("/like", blogHandler.ToggleLike, AuthMiddleware)
+		}
 
-	// User/Profile routes
-	userAPI := api.Group("/users")
-	userAPI.GET("/:username/profile", userHandler.GetProfile)
-	// Protected user routes
-	userAPI.POST("/:username/follow", userHandler.FollowUser, AuthMiddleware)
-	userAPI.DELETE("/:username/follow", userHandler.UnfollowUser, AuthMiddleware)
+		// User routes
+		users := api.Group("/users")
+		{
+			users.GET("/:username/profile", userHandler.GetProfile)
+			users.POST("/:username/follow", userHandler.FollowUser, AuthMiddleware)
+			users.DELETE("/:username/follow", userHandler.UnfollowUser, AuthMiddleware)
+		}
 
-	// Dashboard Routes (Protected)
-	dashboardAPI := api.Group("/dashboard", AuthMiddleware)
-	dashboardAPI.GET("/analytics", analyticsHandler.GetDashboardAnalytics)
+		// Dashboard routes (protected)
+		dashboard := api.Group("/dashboard", AuthMiddleware)
+		{
+			dashboard.GET("/analytics", analyticsHandler.GetDashboardAnalytics)
+		}
+	}
 
-	// This is a more robust way to handle SPA fallback.
-	// It ensures that if a file exists (like main.js), it's served.
-	// If not, it serves index.html.
-	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   "client",
-		HTML5:  true,
-		Browse: false,
-		// Ignore API routes from being handled by static middleware
-		Skipper: func(c echo.Context) bool {
-			return len(c.Path()) > 4 && c.Path()[:4] == "/api"
-		},
-	}))
+	// SPA Fallback: all other routes should serve the index.html
+	e.GET("/*", func(c echo.Context) error {
+		return c.File("client/index.html")
+	})
 
-	// Final fallback for any route that didn't match static files or API
+	// Handle 404 for API routes specifically
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		if he, ok := err.(*echo.HTTPError); ok {
 			if he.Code == http.StatusNotFound {
-				if err := c.File("client/index.html"); err != nil {
-					c.Logger().Error(err)
+				// If the path starts with /api, it's an API 404
+				if len(c.Request().URL.Path) >= 4 && c.Request().URL.Path[:4] == "/api" {
+					c.JSON(http.StatusNotFound, map[string]string{"message": "API endpoint not found"})
+					return
 				}
+				// Otherwise, it's a frontend route, serve index.html
+				c.File("client/index.html")
 				return
 			}
 		}

@@ -1,40 +1,37 @@
-import { authorizedFetch, handleResponse } from './applicationService.js';
+import { authorizedFetch } from '../utils/api.js';
 
 const API_BASE_URL = '/api';
 
 export const BlogService = {
-    getPublicPosts: async (params = {}) => {
+    getPublicPosts: (params = {}) => {
         const query = new URLSearchParams(params).toString();
-        const response = await fetch(`${API_BASE_URL}/blog?${query}`);
-        return handleResponse(response);
+        return authorizedFetch(`${API_BASE_URL}/blog/public?${query}`);
     },
 
-    getPublicPost: async (username, slug) => {
-        const response = await fetch(`${API_BASE_URL}/blog/${username}/${slug}`);
-        return handleResponse(response);
+    getPublicPost: (username, slug) => {
+        return authorizedFetch(`${API_BASE_URL}/blog/${username}/${slug}`);
     },
 
-    createPost: async (postData) => {
+    createPost: (postData) => {
         return authorizedFetch(`${API_BASE_URL}/blog`, {
             method: 'POST',
             body: JSON.stringify(postData),
         });
     },
 
-    getComments: async (postId) => {
-        const response = await fetch(`${API_BASE_URL}/blog/${postId}/comments`);
-        return handleResponse(response);
+    getComments: (postId) => {
+        return authorizedFetch(`${API_BASE_URL}/blog/${postId}/comments`);
     },
 
-    addComment: async (postId, commentData) => {
+    addComment: (postId, commentData) => {
         return authorizedFetch(`${API_BASE_URL}/blog/${postId}/comments`, {
             method: 'POST',
             body: JSON.stringify(commentData),
         });
     },
 
-    toggleLike: async (likeData) => {
-        return authorizedFetch(`${API_BASE_URL}/blog/toggle-like`, {
+    toggleLike: (likeData) => {
+        return authorizedFetch(`${API_BASE_URL}/blog/like`, {
             method: 'POST',
             body: JSON.stringify(likeData),
         });

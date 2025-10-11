@@ -2,20 +2,24 @@ package usecase
 
 import (
 	"errors"
-	"fmt" // Added from attempted
-
+	"fmt"
 	"job-app-tracker/internal/domain"
 	"job-app-tracker/internal/repository"
 	"job-app-tracker/pkg/util"
+	"regexp"
+)
+
+var (
+	emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 )
 
 type userService struct {
 	userRepo   repository.UserRepository
-	blogRepo   repository.BlogPostRepository   // Added from attempted
-	followRepo repository.FollowRepository // Added from attempted
+	blogRepo   repository.BlogPostRepository
+	followRepo repository.FollowRepository
 }
 
-func NewUserService(userRepo repository.UserRepository, blogRepo repository.BlogPostRepository, followRepo repository.FollowRepository) UserUseCase { // Updated signature
+func NewUserService(userRepo repository.UserRepository, blogRepo repository.BlogPostRepository, followRepo repository.FollowRepository) UserUseCase {
 	return &userService{
 		userRepo:   userRepo,
 		blogRepo:   blogRepo,
@@ -24,35 +28,37 @@ func NewUserService(userRepo repository.UserRepository, blogRepo repository.Blog
 }
 
 func (s *userService) Register(username, email, password string) (*domain.User, error) {
-	// Basic validation
-	if username == "" || email == "" || password == "" {
-		return nil, errors.New("username, email, and password are required")
+	if len(username) < 3 || len(username) > 50 {
+		return nil, errors.New("username must be between 3 and 50 characters")
+	}
+	if !emailRegex.MatchString(email) {
+		return nil, errors.New("invalid email format")
+	}
+	if len(password) < 8 {
+		return nil, errors.New("password must be at least 8 characters long")
 	}
 
-	// Check if user already exists
 	existingUser, err := s.userRepo.GetByEmail(email)
 	if err != nil {
-		return nil, fmt.Errorf("error checking for existing user by email: %w", err) // Added error wrapping
+		return nil, fmt.Errorf("error checking for existing user by email: %w", err)
 	}
 	if existingUser != nil {
-		return nil, errors.New("user with this email already exists")
+		return nil, errors.New("email already in use")
 	}
 
 	existingUser, err = s.userRepo.GetByUsername(username)
 	if err != nil {
-		return nil, fmt.Errorf("error checking for existing user by username: %w", err) // Added error wrapping
+		return nil, fmt.Errorf("error checking for existing user by username: %w", err)
 	}
 	if existingUser != nil {
-		return nil, errors.New("username is already taken")
+		return nil, errors.New("username already taken")
 	}
 
-	// Hash password
 	hashedPassword, err := util.HashPassword(password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err) // Added error wrapping
+		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	// Create user
 	user := &domain.User{
 		Username:       username,
 		Email:          email,
@@ -60,16 +66,16 @@ func (s *userService) Register(username, email, password string) (*domain.User, 
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err) // Added error wrapping
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return user, nil
 }
 
-func (s *userService) Login(email, password string) (*domain.User, string, error) { // Updated signature
+func (s *userService) Login(email, password string) (*domain.User, string, error) {
 	user, err := s.userRepo.GetByEmail(email)
 	if err != nil {
-		return nil, "", fmt.Errorf("error retrieving user: %w", err) // Added error wrapping
+		return nil, "", fmt.Errorf("error retrieving user: %w", err)
 	}
 	if user == nil {
 		return nil, "", errors.New("invalid credentials")
@@ -81,19 +87,19 @@ func (s *userService) Login(email, password string) (*domain.User, string, error
 
 	token, err := util.GenerateJWT(user.ID, user.Username)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to generate token: %w", err) // Added error wrapping
+		return nil, "", fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	return user, token, nil // Updated return value
+	return user, token, nil
 }
 
-func (s *userService) GetProfile(username string, viewerID int64) (*UserProfile, error) { // Added from attempted
+func (s *userService) GetProfile(username string, viewerID int64) (*UserProfile, error) {
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user: %w", err)
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, nil // Not found
 	}
 
 	posts, err := s.blogRepo.GetPublicPostsByUserID(user.ID)
@@ -119,10 +125,13 @@ func (s *userService) GetProfile(username string, viewerID int64) (*UserProfile,
 		}
 	}
 
-	user.HashedPassword = "" // Sanitize user data
+	// Sanitize user data before returning
+	user.HashedPassword = ""
+	user.Email = "" // Attempted content removes email, which is a good security practice for public profiles.
+
 	profile := &UserProfile{
-		User:           user,
-		Posts:          posts,
+		User:           *user, // Attempted content uses *user, assuming UserProfile.User is domain.User
+		BlogPosts:      posts, // Attempted content uses BlogPosts, original uses Posts
 		IsFollowing:    isFollowing,
 		FollowerCount:  followerCount,
 		FollowingCount: followingCount,
@@ -131,9 +140,12 @@ func (s *userService) GetProfile(username string, viewerID int64) (*UserProfile,
 	return profile, nil
 }
 
-func (s *userService) FollowUser(followerID int64, followeeUsername string) error { // Added from attempted
+func (s *userService) FollowUser(followerID int64, followeeUsername string) error {
 	followee, err := s.userRepo.GetByUsername(followeeUsername)
-	if err != nil || followee == nil {
+	if err != nil {
+		return err
+	}
+	if followee == nil {
 		return errors.New("user to follow not found")
 	}
 
@@ -146,20 +158,22 @@ func (s *userService) FollowUser(followerID int64, followeeUsername string) erro
 		return err
 	}
 	if exists {
-		return nil // Already following, no error
+		return errors.New("already following this user") // Attempted content provides a more explicit error
 	}
 
 	follow := &domain.Follow{
 		FollowerUserID: followerID,
 		FolloweeUserID: followee.ID,
 	}
-
 	return s.followRepo.Create(follow)
 }
 
-func (s *userService) UnfollowUser(followerID int64, followeeUsername string) error { // Added from attempted
+func (s *userService) UnfollowUser(followerID int64, followeeUsername string) error {
 	followee, err := s.userRepo.GetByUsername(followeeUsername)
-	if err != nil || followee == nil {
+	if err != nil {
+		return err
+	}
+	if followee == nil {
 		return errors.New("user to unfollow not found")
 	}
 

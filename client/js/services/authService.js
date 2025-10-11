@@ -1,24 +1,20 @@
-import { handleResponse } from './utils.js'; // Changed to import handleResponse
+import { authorizedFetch } from '../utils/api.js';
 
 const API_BASE_URL = '/api';
 
 export const AuthService = {
-    login: async (email, password) => {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    login: (email, password) => {
+        return authorizedFetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }),
         });
-        return handleResponse(response);
     },
 
-    register: async (username, email, password) => {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    register: (username, email, password) => {
+        return authorizedFetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
+            body: JSON.stringify({ username, email, password }),
         });
-        return handleResponse(response);
     },
 };
 

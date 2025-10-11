@@ -1,15 +1,13 @@
-import { authorizedFetch } from './applicationService.js';
+import { authorizedFetch } from '../utils/api.js';
 
 const API_BASE_URL = '/api/dashboard';
 
 export const DashboardService = {
-    getAnalytics: async () => {
+    getAnalytics: () => {
         try {
-            return await authorizedFetch(`${API_BASE_URL}/analytics`, {
-                method: 'GET',
-            });
+            return authorizedFetch(`${API_BASE_URL}/analytics`);
         } catch (error) {
-            console.error('Error fetching analytics:', error);
+            console.error('Failed to fetch analytics:', error);
             throw error;
         }
     },

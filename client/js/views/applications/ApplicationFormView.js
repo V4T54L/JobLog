@@ -1,75 +1,81 @@
 import { ApplicationService } from '../../services/applicationService.js';
 import { navigate } from '../../router.js';
+import { Alert } from '../../components/Alert.js';
+import { Spinner } from '../../components/Spinner.js';
 
 export const ApplicationFormView = {
     render: async (container, params) => {
-        const isEditing = !!params.id;
-        let app = { CompanyName: '', RoleTitle: '', Status: 'Applied', DateApplied: new Date().toISOString().split('T')[0] };
+        const isEditMode = !!params.id;
+        let existingApp = null;
 
-        if (isEditing) {
+        container.innerHTML = '';
+        container.appendChild(Spinner());
+
+        if (isEditMode) {
             try {
-                const existingApp = await ApplicationService.getApplication(params.id);
-                // TODO: The service returns IDs, not names. This is a placeholder.
-                // For a real implementation, the API should return joined data or we need separate lookups.
-                app.CompanyName = `CompanyID ${existingApp.CompanyID}`;
-                app.RoleTitle = `RoleID ${existingApp.RoleID}`;
-                app.Status = existingApp.Status;
-                app.DateApplied = new Date(existingApp.DateApplied).toISOString().split('T')[0];
+                existingApp = await ApplicationService.getApplication(params.id);
             } catch (error) {
-                container.innerHTML = `<p>Could not load application to edit.</p>`;
+                container.innerHTML = '';
+                container.appendChild(Alert('Could not load application data.'));
                 return;
             }
         }
 
         container.innerHTML = `
-            <h1 class="text-3xl font-bold mb-6">${isEditing ? 'Edit' : 'Add New'} Application</h1>
-            <form id="app-form" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
-                <div id="form-error" class="hidden text-red-500 bg-red-100 dark:bg-red-900 p-3 rounded"></div>
-                <div>
-                    <label for="companyName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Company Name</label>
-                    <input type="text" id="companyName" name="companyName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600" value="${app.CompanyName}">
-                </div>
-                <div>
-                    <label for="roleTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role Title</label>
-                    <input type="text" id="roleTitle" name="roleTitle" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600" value="${app.RoleTitle}">
-                </div>
-                <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                    <input type="text" id="status" name="status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600" value="${app.Status}">
-                </div>
-                <div>
-                    <label for="dateApplied" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Applied</label>
-                    <input type="date" id="dateApplied" name="dateApplied" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600" value="${app.DateApplied}">
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        ${isEditing ? 'Save Changes' : 'Create Application'}
-                    </button>
-                </div>
-            </form>
+            <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">${isEditMode ? 'Edit' : 'Add New'} Application</h2>
+                <form id="application-form">
+                    <div id="error-container" class="mb-4"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="companyName" class="block text-gray-700 dark:text-gray-300 mb-2">Company Name</label>
+                            <input type="text" id="companyName" name="companyName" value="${existingApp?.company_name || ''}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                        <div>
+                            <label for="roleTitle" class="block text-gray-700 dark:text-gray-300 mb-2">Role Title</label>
+                            <input type="text" id="roleTitle" name="roleTitle" value="${existingApp?.role_title || ''}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                        <div>
+                            <label for="status" class="block text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                            <input type="text" id="status" name="status" value="${existingApp?.status || ''}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                        <div>
+                            <label for="dateApplied" class="block text-gray-700 dark:text-gray-300 mb-2">Date Applied</label>
+                            <input type="date" id="dateApplied" name="dateApplied" value="${existingApp ? new Date(existingApp.date_applied).toISOString().split('T')[0] : ''}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200">${isEditMode ? 'Update' : 'Save'} Application</button>
+                    </div>
+                </form>
+            </div>
         `;
 
-        const form = container.querySelector('#app-form');
+        const form = container.querySelector('#application-form');
+        const errorContainer = container.querySelector('#error-container');
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            const errorDiv = container.querySelector('#form-error');
-            errorDiv.classList.add('hidden');
+            errorContainer.innerHTML = '';
+
+            const appData = {
+                company_name: form.companyName.value,
+                role_title: form.roleTitle.value,
+                status: form.status.value,
+                date_applied: form.dateApplied.value,
+            };
 
             try {
-                if (isEditing) {
-                    await ApplicationService.updateApplication(params.id, data);
-                    navigate(`/applications/${params.id}`);
+                let savedApp;
+                if (isEditMode) {
+                    savedApp = await ApplicationService.updateApplication(params.id, appData);
                 } else {
-                    const newApp = await ApplicationService.createApplication(data);
-                    navigate(`/applications/${newApp.ID}`);
+                    savedApp = await ApplicationService.createApplication(appData);
                 }
+                navigate(`/applications/${savedApp.id}`);
             } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.classList.remove('hidden');
+                errorContainer.appendChild(Alert(error.message || 'Failed to save application.'));
             }
         });
     }
 };
-```

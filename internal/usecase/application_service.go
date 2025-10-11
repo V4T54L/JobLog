@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"fmt"
+	"errors"
 	"job-app-tracker/internal/domain"
 	"job-app-tracker/internal/repository"
 	"strings"
@@ -23,12 +23,27 @@ func NewApplicationService(appRepo repository.ApplicationRepository, companyRepo
 }
 
 func (s *applicationService) CreateApplication(userID int64, companyName, roleTitle, status, dateAppliedStr string) (*domain.Application, error) {
+	if companyName == "" || len(companyName) > 255 {
+		return nil, errors.New("company name is required and must be less than 255 characters")
+	}
+	if roleTitle == "" || len(roleTitle) > 255 {
+		return nil, errors.New("role title is required and must be less than 255 characters")
+	}
+	if status == "" || len(status) > 50 {
+		return nil, errors.New("status is required and must be less than 50 characters")
+	}
+
+	dateApplied, err := time.Parse("2006-01-02", dateAppliedStr)
+	if err != nil {
+		return nil, errors.New("invalid date format, please use YYYY-MM-DD")
+	}
+
 	company := &domain.Company{
 		Name:           companyName,
-		NormalizedName: strings.ToLower(companyName),
+		NormalizedName: strings.ToLower(strings.TrimSpace(companyName)),
 	}
 	if err := s.companyRepo.FindOrCreate(company); err != nil {
-		return nil, fmt.Errorf("failed to find or create company: %w", err)
+		return nil, err
 	}
 
 	role := &domain.Role{
@@ -36,12 +51,7 @@ func (s *applicationService) CreateApplication(userID int64, companyName, roleTi
 		Title:     roleTitle,
 	}
 	if err := s.roleRepo.FindOrCreate(role); err != nil {
-		return nil, fmt.Errorf("failed to find or create role: %w", err)
-	}
-
-	dateApplied, err := time.Parse("2006-01-02", dateAppliedStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %w", err)
+		return nil, err
 	}
 
 	app := &domain.Application{
@@ -53,7 +63,7 @@ func (s *applicationService) CreateApplication(userID int64, companyName, roleTi
 	}
 
 	if err := s.appRepo.Create(app); err != nil {
-		return nil, fmt.Errorf("failed to create application: %w", err)
+		return nil, err
 	}
 
 	return app, nil
@@ -68,20 +78,35 @@ func (s *applicationService) GetApplicationByID(id, userID int64) (*domain.Appli
 }
 
 func (s *applicationService) UpdateApplication(id, userID int64, companyName, roleTitle, status, dateAppliedStr string) (*domain.Application, error) {
+	if companyName == "" || len(companyName) > 255 {
+		return nil, errors.New("company name is required and must be less than 255 characters")
+	}
+	if roleTitle == "" || len(roleTitle) > 255 {
+		return nil, errors.New("role title is required and must be less than 255 characters")
+	}
+	if status == "" || len(status) > 50 {
+		return nil, errors.New("status is required and must be less than 50 characters")
+	}
+
 	app, err := s.appRepo.GetByID(id, userID)
 	if err != nil {
 		return nil, err
 	}
 	if app == nil {
-		return nil, fmt.Errorf("application not found")
+		return nil, errors.New("application not found")
+	}
+
+	dateApplied, err := time.Parse("2006-01-02", dateAppliedStr)
+	if err != nil {
+		return nil, errors.New("invalid date format, please use YYYY-MM-DD")
 	}
 
 	company := &domain.Company{
 		Name:           companyName,
-		NormalizedName: strings.ToLower(companyName),
+		NormalizedName: strings.ToLower(strings.TrimSpace(companyName)),
 	}
 	if err := s.companyRepo.FindOrCreate(company); err != nil {
-		return nil, fmt.Errorf("failed to find or create company: %w", err)
+		return nil, err
 	}
 
 	role := &domain.Role{
@@ -89,12 +114,7 @@ func (s *applicationService) UpdateApplication(id, userID int64, companyName, ro
 		Title:     roleTitle,
 	}
 	if err := s.roleRepo.FindOrCreate(role); err != nil {
-		return nil, fmt.Errorf("failed to find or create role: %w", err)
-	}
-
-	dateApplied, err := time.Parse("2006-01-02", dateAppliedStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %w", err)
+		return nil, err
 	}
 
 	app.CompanyID = company.ID
@@ -103,7 +123,7 @@ func (s *applicationService) UpdateApplication(id, userID int64, companyName, ro
 	app.DateApplied = dateApplied
 
 	if err := s.appRepo.Update(app); err != nil {
-		return nil, fmt.Errorf("failed to update application: %w", err)
+		return nil, err
 	}
 
 	return app, nil
