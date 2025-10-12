@@ -11,30 +11,30 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type postgresApplicationRepository struct {
-	db *sqlx.DB
-}
+// type postgresApplicationRepository struct {
+// 	db *sqlx.DB
+// }
 
-func NewPostgresApplicationRepository(db *sqlx.DB) repository.CompanyRepository {
-	return &postgresApplicationRepository{db: db}
-}
+// func NewPostgresApplicationRepository(db *sqlx.DB) repository.CompanyRepository {
+// 	return &postgresApplicationRepository{db: db}
+// }
 
-func (r *postgresApplicationRepository) FindOrCreate(company *domain.Company) error {
-	query := `
-        WITH s AS (
-            SELECT id FROM companies WHERE normalized_name = $1
-        ), i AS (
-            INSERT INTO companies (name, normalized_name)
-            SELECT $2, $1
-            WHERE NOT EXISTS (SELECT 1 FROM s)
-            RETURNING id
-        )
-        SELECT id FROM i
-        UNION ALL
-        SELECT id FROM s
-    `
-	return r.db.QueryRow(query, company.NormalizedName, company.Name).Scan(&company.ID)
-}
+// func (r *postgresApplicationRepository) FindOrCreate(company *domain.Company) error {
+// 	query := `
+//         WITH s AS (
+//             SELECT id FROM companies WHERE normalized_name = $1
+//         ), i AS (
+//             INSERT INTO companies (name, normalized_name)
+//             SELECT $2, $1
+//             WHERE NOT EXISTS (SELECT 1 FROM s)
+//             RETURNING id
+//         )
+//         SELECT id FROM i
+//         UNION ALL
+//         SELECT id FROM s
+//     `
+// 	return r.db.QueryRow(query, company.NormalizedName, company.Name).Scan(&company.ID)
+// }
 
 type postgresRoleRepository struct {
 	db *sqlx.DB
@@ -73,8 +73,8 @@ func (r *postgresAppRepo) Create(app *domain.Application) error {
 	query := `
         INSERT INTO applications (user_id, company_id, role_id, date_applied, status, metadata)
         VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, created_at, updated_at`
-	return r.db.QueryRow(query, app.UserID, app.CompanyID, app.RoleID, app.DateApplied, app.Status, app.Metadata).Scan(&app.ID, &app.CreatedAt, &app.UpdatedAt)
+        RETURNING id, created_at`
+	return r.db.QueryRow(query, app.UserID, app.CompanyID, app.RoleID, app.DateApplied, app.Status, app.Metadata).Scan(&app.ID, &app.DateApplied)
 }
 
 func (r *postgresAppRepo) GetByID(id int64, userID int64) (*domain.Application, error) {
@@ -223,4 +223,3 @@ func (r *postgresAppNoteRepository) GetAllForApplication(appID int64, userID int
 	err := r.db.Select(&notes, query, appID, userID)
 	return notes, err
 }
-

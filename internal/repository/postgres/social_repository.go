@@ -39,8 +39,8 @@ func (r *postgresCommentRepository) GetByID(id int64) (*domain.Comment, error) {
 	return &comment, err
 }
 
-func (r *postgresCommentRepository) GetForPost(postID int64) ([]*domain.Comment, error) {
-	var comments []*domain.Comment
+func (r *postgresCommentRepository) GetForPost(postID int64) ([]domain.Comment, error) {
+	var comments []domain.Comment
 	query := `SELECT c.*, u.username FROM comments c
               JOIN users u ON c.user_id = u.id
               WHERE c.post_id = $1

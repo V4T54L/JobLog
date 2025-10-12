@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"errors"
-	"job-app-tracker/internal/domain"
 	"job-app-tracker/pkg/util"
 	"net/http"
 	"strings"
@@ -98,4 +96,3 @@ func RateLimiterMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
-

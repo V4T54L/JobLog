@@ -18,10 +18,10 @@ func NewApplicationHandler(uc usecase.ApplicationUseCase) *ApplicationHandler {
 }
 
 type createApplicationRequest struct {
-	CompanyName string `json:"companyName"`
-	RoleTitle   string `json:"roleTitle"`
+	CompanyName string `json:"company_name"`
+	RoleTitle   string `json:"role_title"`
 	Status      string `json:"status"`
-	DateApplied string `json:"dateApplied"`
+	DateApplied string `json:"date_applied"`
 }
 
 func (h *ApplicationHandler) CreateApplication(c echo.Context) error {
@@ -116,4 +116,3 @@ func (h *ApplicationHandler) DeleteApplication(c echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
-

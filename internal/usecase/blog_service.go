@@ -1,13 +1,12 @@
 package usecase
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"job-app-tracker/internal/domain"
 	"job-app-tracker/internal/repository"
 	"job-app-tracker/pkg/util"
-	"strconv"
-	"strings"
 )
 
 const MaxCommentDepth = 5
@@ -60,8 +59,11 @@ func (s *blogService) CreatePost(userID int64, title, contentMd, contentHtml str
 		Slug:        slug,
 		ContentMD:   contentMd,
 		ContentHTML: contentHtml,
-		Excerpt:     excerpt,
-		IsPublic:    isPublic,
+		Excerpt: sql.NullString{
+			String: excerpt,
+			Valid:  excerpt != "",
+		},
+		IsPublic: isPublic,
 	}
 
 	if err := s.blogRepo.Create(post); err != nil {
@@ -130,7 +132,7 @@ func (s *blogService) GetCommentsForPost(postID int64) ([]*domain.Comment, error
 	// Use a map to easily access comments by their ID for nesting
 	commentMap := make(map[int64]*domain.Comment)
 	for _, c := range flatComments {
-		commentMap[c.ID] = c
+		commentMap[c.ID] = &c
 	}
 
 	var nestedComments []*domain.Comment
@@ -138,11 +140,11 @@ func (s *blogService) GetCommentsForPost(postID int64) ([]*domain.Comment, error
 		if c.ParentCommentID.Valid {
 			parent, ok := commentMap[c.ParentCommentID.Int64]
 			if ok {
-				parent.Replies = append(parent.Replies, c)
+				parent.Replies = append(parent.Replies, &c)
 			}
 		} else {
 			// This is a top-level comment
-			nestedComments = append(nestedComments, c)
+			nestedComments = append(nestedComments, &c)
 		}
 	}
 
@@ -170,4 +172,3 @@ func (s *blogService) ToggleLike(userID int64, contentType domain.ContentType, c
 	err = s.likeRepo.Create(like)
 	return true, err
 }
-

@@ -12,10 +12,10 @@ type ListParams struct {
 
 // Pagination holds metadata for paginated results.
 type Pagination struct {
-	TotalItems  int64 `json:"totalItems"`
-	TotalPages  int   `json:"totalPages"`
-	CurrentPage int   `json:"currentPage"`
-	PageSize    int   `json:"pageSize"`
+	TotalItems  int64 `json:"total_items"`
+	TotalPages  int   `json:"total_pages"`
+	CurrentPage int   `json:"current_page"`
+	PageSize    int   `json:"page_size"`
 }
 
 // PaginatedApplications is a container for paginated application results.

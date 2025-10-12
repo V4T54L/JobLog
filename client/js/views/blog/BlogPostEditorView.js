@@ -98,4 +98,3 @@ export const BlogPostEditorView = {
         updatePreview(); // Initial render
     }
 };
-```

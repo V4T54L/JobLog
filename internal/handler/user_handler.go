@@ -3,9 +3,11 @@ package handler
 import (
 	"net/http"
 
+	"job-app-tracker/internal/usecase"
+	"job-app-tracker/pkg/util"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
-	"job-app-tracker/internal/usecase"
 )
 
 type UserHandler struct {
@@ -23,7 +25,7 @@ func (h *UserHandler) GetProfile(c echo.Context) error {
 	var viewerID int64
 	userToken, ok := c.Get("user").(*jwt.Token)
 	if ok {
-		claims := userToken.Claims.(*Claims)
+		claims := userToken.Claims.(*util.Claims)
 		viewerID = claims.UserID
 	}
 
@@ -57,4 +59,3 @@ func (h *UserHandler) UnfollowUser(c echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
-

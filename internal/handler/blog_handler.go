@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"job-app-tracker/internal/domain"
 	"job-app-tracker/internal/usecase"
 	"net/http"
@@ -17,18 +16,18 @@ type BlogHandler struct {
 
 type createPostRequest struct {
 	Title     string `json:"title"`
-	ContentMD string `json:"contentMd"`
-	IsPublic  bool   `json:"isPublic"`
+	ContentMD string `json:"content_md"`
+	IsPublic  bool   `json:"is_public"`
 }
 
 type addCommentRequest struct {
-	ContentMD       string `json:"contentMd"`
-	ParentCommentID *int64 `json:"parentCommentId"`
+	ContentMD       string `json:"content_md"`
+	ParentCommentID *int64 `json:"parent_comment_id"`
 }
 
 type toggleLikeRequest struct {
-	ContentType domain.ContentType `json:"contentType"`
-	ContentID   int64              `json:"contentId"`
+	ContentType domain.ContentType `json:"content_type"`
+	ContentID   int64              `json:"content_id"`
 }
 
 func NewBlogHandler(uc usecase.BlogUseCase) *BlogHandler {
@@ -143,4 +142,3 @@ func (h *BlogHandler) ToggleLike(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]bool{"isLiked": isLiked})
 }
-

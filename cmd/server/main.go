@@ -1,8 +1,6 @@
 package main
 
 import (
-	"database/sql"
-	"errors"
 	"log"
 	"os"
 
@@ -10,7 +8,6 @@ import (
 	"job-app-tracker/internal/repository/postgres"
 	"job-app-tracker/internal/usecase"
 
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
@@ -30,7 +27,7 @@ func main() {
 	}
 
 	// Run migrations
-	runMigrations(dbURL)
+	// runMigrations(dbURL)
 
 	// Database connection
 	db, err := sqlx.Connect("postgres", dbURL)
@@ -43,7 +40,7 @@ func main() {
 	userRepo := postgres.NewPostgresUserRepository(db)
 	companyRepo := postgres.NewPostgresCompanyRepository(db)
 	roleRepo := postgres.NewPostgresRoleRepository(db)
-	appRepo := postgres.NewPostgresApplicationRepository(db)
+	appRepo := postgres.NewPostgresAppRepository(db)
 	blogRepo := postgres.NewPostgresBlogPostRepository(db)
 	commentRepo := postgres.NewPostgresCommentRepository(db)
 	likeRepo := postgres.NewPostgresLikeRepository(db)
@@ -67,35 +64,34 @@ func main() {
 	e.Logger.Fatal(e.Start(":" + port))
 }
 
-func runMigrations(databaseURL string) {
-	if databaseURL == "" {
-		log.Fatal("Cannot run migrations: DATABASE_URL is not set")
-	}
+// func runMigrations(databaseURL string) {
+// 	if databaseURL == "" {
+// 		log.Fatal("Cannot run migrations: DATABASE_URL is not set")
+// 	}
 
-	sourceURL := "file://migrations"
-	m, err := migrate.New(sourceURL, databaseURL)
-	if err != nil {
-		log.Fatalf("Migration initialization failed: %v", err)
-	}
+// 	sourceURL := "file://migrations"
+// 	m, err := migrate.New(sourceURL, databaseURL)
+// 	if err != nil {
+// 		log.Fatalf("Migration initialization failed: %v", err)
+// 	}
 
-	if err := m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
-			log.Println("No new migrations to apply.")
-		} else {
-			log.Fatalf("Could not run migrations: %v", err)
-		}
-	} else {
-		log.Println("Database migrated successfully.")
-	}
+// 	if err := m.Up(); err != nil {
+// 		if errors.Is(err, migrate.ErrNoChange) {
+// 			log.Println("No new migrations to apply.")
+// 		} else {
+// 			log.Fatalf("Could not run migrations: %v", err)
+// 		}
+// 	} else {
+// 		log.Println("Database migrated successfully.")
+// 	}
 
-	srcErr, dbErr := m.Close()
-	if srcErr != nil {
-		log.Printf("Error closing migration source: %v", srcErr)
-	}
-	if dbErr != nil {
-		if dbErr != sql.ErrConnDone {
-			log.Printf("Error closing migration database connection: %v", dbErr)
-		}
-	}
-}
-
+// 	srcErr, dbErr := m.Close()
+// 	if srcErr != nil {
+// 		log.Printf("Error closing migration source: %v", srcErr)
+// 	}
+// 	if dbErr != nil {
+// 		if dbErr != sql.ErrConnDone {
+// 			log.Printf("Error closing migration database connection: %v", dbErr)
+// 		}
+// 	}
+// }

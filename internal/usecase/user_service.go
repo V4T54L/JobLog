@@ -130,8 +130,8 @@ func (s *userService) GetProfile(username string, viewerID int64) (*UserProfile,
 	user.Email = "" // Attempted content removes email, which is a good security practice for public profiles.
 
 	profile := &UserProfile{
-		User:           *user, // Attempted content uses *user, assuming UserProfile.User is domain.User
-		BlogPosts:      posts, // Attempted content uses BlogPosts, original uses Posts
+		User:           user,  // Attempted content uses *user, assuming UserProfile.User is domain.User
+		Posts:          posts, // Attempted content uses BlogPosts, original uses Posts
 		IsFollowing:    isFollowing,
 		FollowerCount:  followerCount,
 		FollowingCount: followingCount,
@@ -179,4 +179,3 @@ func (s *userService) UnfollowUser(followerID int64, followeeUsername string) er
 
 	return s.followRepo.Delete(followerID, followee.ID)
 }
-

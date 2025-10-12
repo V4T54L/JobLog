@@ -33,9 +33,9 @@ type AnalyticsUseCase interface {
 
 // UserProfile is a DTO for user profile data
 type UserProfile struct {
-	User           *domain.User         `json:"user"`
-	Posts          []domain.BlogPost    `json:"posts"`
-	IsFollowing    bool                 `json:"isFollowing"`
-	FollowerCount  int                  `json:"followerCount"`
-	FollowingCount int                  `json:"followingCount"`
+	User           *domain.User      `json:"user"`
+	Posts          []domain.BlogPost `json:"posts"`
+	IsFollowing    bool              `json:"is_following"`
+	FollowerCount  int               `json:"follower_count"`
+	FollowingCount int               `json:"following_count"`
 }

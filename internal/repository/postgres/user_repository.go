@@ -25,7 +25,7 @@ func (r *postgresUserRepository) GetByEmail(email string) (*domain.User, error) 
 	var user domain.User
 	query := `SELECT id, username, email, hashed_password, bio, avatar_url, settings, created_at, updated_at FROM users WHERE email = $1`
 	err := r.db.Get(&user, query, email)
-	if err == sql.ErrNoRows {
+	if err!=nil && err == sql.ErrNoRows {
 		return nil, nil // Not an error, just no user found
 	}
 	return &user, err
