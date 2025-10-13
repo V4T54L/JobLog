@@ -60,10 +60,10 @@ CREATE TABLE comments (
 
 -- -- migrations/000001_create_initial_tables.down.sql
 
-DROP TABLE IF EXISTS comments;
-DROP TABLE IF EXISTS blog_posts;
-DROP TABLE IF EXISTS history_events;
-DROP TABLE IF EXISTS notes;
-DROP TABLE IF EXISTS applications;
-DROP TABLE IF EXISTS users;
-DROP EXTENSION IF EXISTS "uuid-ossp";
+-- DROP TABLE IF EXISTS comments;
+-- DROP TABLE IF EXISTS blog_posts;
+-- DROP TABLE IF EXISTS history_events;
+-- DROP TABLE IF EXISTS notes;
+-- DROP TABLE IF EXISTS applications;
+-- DROP TABLE IF EXISTS users;
+-- DROP EXTENSION IF EXISTS "uuid-ossp";

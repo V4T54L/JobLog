@@ -19,11 +19,11 @@ CREATE INDEX ON comments (post_id);
 
 -- -- migrations/000002_add_indexes.down.sql
 
-DROP INDEX IF EXISTS users_email_idx;
-DROP INDEX IF EXISTS users_username_idx;
-DROP INDEX IF EXISTS applications_user_id_idx;
-DROP INDEX IF EXISTS applications_status_idx;
-DROP INDEX IF EXISTS notes_application_id_idx;
-DROP INDEX IF EXISTS history_events_application_id_idx;
-DROP INDEX IF EXISTS blog_posts_slug_idx;
-DROP INDEX IF EXISTS comments_post_id_idx;
+-- DROP INDEX IF EXISTS users_email_idx;
+-- DROP INDEX IF EXISTS users_username_idx;
+-- DROP INDEX IF EXISTS applications_user_id_idx;
+-- DROP INDEX IF EXISTS applications_status_idx;
+-- DROP INDEX IF EXISTS notes_application_id_idx;
+-- DROP INDEX IF EXISTS history_events_application_id_idx;
+-- DROP INDEX IF EXISTS blog_posts_slug_idx;
+-- DROP INDEX IF EXISTS comments_post_id_idx;
