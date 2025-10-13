@@ -1,5 +1,3 @@
-// (This is an updated version of your main.go)
-
 package main
 
 import (
@@ -37,6 +35,10 @@ func main() {
 	userRepo := postgres.NewUserRepository(dbpool)
 	appRepo := postgres.NewApplicationRepository(dbpool)
 	blogRepo := postgres.NewBlogRepository(dbpool)
+
+	// userRepo := memory.NewUserRepository()
+	// appRepo := memory.NewApplicationRepository()
+	// blogRepo := memory.NewBlogRepository()
 
 	authService := service.NewAuthService(userRepo, jwtManager)
 	appService := service.NewApplicationService(appRepo)
