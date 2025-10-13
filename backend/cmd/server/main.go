@@ -1,3 +1,4 @@
+// (This is an updated version of your main.go)
 
 package main
 
@@ -9,36 +10,42 @@ import (
 	"joblog/internal/api"
 	"joblog/internal/api/handler"
 	"joblog/internal/core/service"
-	"joblog/internal/repository/memory"
+	"joblog/internal/repository/postgres"
 	"joblog/pkg/auth"
+	"joblog/pkg/database"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	log.Println("Starting JobLog API server...")
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
 
 	// |--- Dependency Injection ---
 
-	// 1. JWT Helper
-	// In production, this secret should be loaded from a secure source (e.g., environment variables).
+	dbpool, err := database.ConnectDB()
+	if err != nil {
+		log.Fatalf("Could not connect to the database: %v", err)
+	}
+	defer dbpool.Close()
+
 	jwtSecret := "my-super-secret-and-long-key-for-hs256"
 	jwtManager := auth.NewJWTManager(jwtSecret, 24*time.Hour)
 
-	// 2. Repositories (In-Memory)
-	userRepo := memory.NewUserRepository()
-	appRepo := memory.NewApplicationRepository()
-	blogRepo := memory.NewBlogRepository()
+	userRepo := postgres.NewUserRepository(dbpool)
+	appRepo := postgres.NewApplicationRepository(dbpool)
+	blogRepo := postgres.NewBlogRepository(dbpool)
 
-	// 3. Services
 	authService := service.NewAuthService(userRepo, jwtManager)
 	appService := service.NewApplicationService(appRepo)
 	blogService := service.NewBlogService(blogRepo)
 
-	// 4. Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	appHandler := handler.NewApplicationHandler(appService)
 	blogHandler := handler.NewBlogHandler(blogService)
 
-	// 5. Router
 	router := api.NewRouter(authHandler, appHandler, blogHandler, jwtManager)
 
 	// |--- Server Configuration ---
