@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye, 
-  Archive, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  Archive,
   MoreVertical,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { getApplications, createApplication } from '../api/applications';
+import { getAllApplications, createApplication } from '../services/api/applicationService';
 import { Application, CreateApplicationData } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
@@ -28,7 +28,7 @@ export default function Applications() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
-  
+
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -41,8 +41,10 @@ export default function Applications() {
 
   const loadApplications = async () => {
     try {
-      const response = await getApplications();
-      setApplications(response.data);
+      const response = await getAllApplications();
+      if (response){
+        setApplications(response);
+      }
     } catch (err) {
       setError('Failed to load applications');
     } finally {
@@ -53,7 +55,7 @@ export default function Applications() {
   const filterAndSortApplications = () => {
     let filtered = applications.filter(app => {
       const matchesSearch = app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          app.role.toLowerCase().includes(searchTerm.toLowerCase());
+        app.role.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -61,7 +63,7 @@ export default function Applications() {
     // Sort applications
     filtered.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'date':
           comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -205,8 +207,8 @@ export default function Applications() {
                         >
                           Company
                           {sortBy === 'company' && (
-                            sortOrder === 'desc' ? 
-                              <ChevronDown className="w-4 h-4 ml-1" /> : 
+                            sortOrder === 'desc' ?
+                              <ChevronDown className="w-4 h-4 ml-1" /> :
                               <ChevronUp className="w-4 h-4 ml-1" />
                           )}
                         </button>
@@ -218,8 +220,8 @@ export default function Applications() {
                         >
                           Role
                           {sortBy === 'role' && (
-                            sortOrder === 'desc' ? 
-                              <ChevronDown className="w-4 h-4 ml-1" /> : 
+                            sortOrder === 'desc' ?
+                              <ChevronDown className="w-4 h-4 ml-1" /> :
                               <ChevronUp className="w-4 h-4 ml-1" />
                           )}
                         </button>
@@ -231,8 +233,8 @@ export default function Applications() {
                         >
                           Applied
                           {sortBy === 'date' && (
-                            sortOrder === 'desc' ? 
-                              <ChevronDown className="w-4 h-4 ml-1" /> : 
+                            sortOrder === 'desc' ?
+                              <ChevronDown className="w-4 h-4 ml-1" /> :
                               <ChevronUp className="w-4 h-4 ml-1" />
                           )}
                         </button>
@@ -244,8 +246,8 @@ export default function Applications() {
                         >
                           Updated
                           {sortBy === 'updated' && (
-                            sortOrder === 'desc' ? 
-                              <ChevronDown className="w-4 h-4 ml-1" /> : 
+                            sortOrder === 'desc' ?
+                              <ChevronDown className="w-4 h-4 ml-1" /> :
                               <ChevronUp className="w-4 h-4 ml-1" />
                           )}
                         </button>
@@ -282,7 +284,7 @@ export default function Applications() {
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </button>
-                              
+
                               <AnimatePresence>
                                 {openActionMenu === application.id && (
                                   <motion.div
@@ -356,7 +358,7 @@ export default function Applications() {
       </div>
 
       {/* Add Application Modal */}
-      <AddApplicationModal 
+      <AddApplicationModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={loadApplications}
@@ -387,7 +389,7 @@ function AddApplicationModal({ isOpen, onClose, onAdd }: AddApplicationModalProp
     setError(null);
 
     try {
-      await createApplication(formData);
+      await createApplication({ ...formData, date: "some_random_date" });
       onAdd();
       onClose();
       setFormData({ company: '', role: '', status: 'Applied' });

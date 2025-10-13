@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  FileText, 
-  Clock, 
-  Gift, 
+import {
+  FileText,
+  Clock,
+  Gift,
   Plus,
   ArrowRight,
   TrendingUp
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+// TODO: update this
 import { getDashboardStats } from '../api/dashboard';
 import { DashboardStats } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -166,12 +167,12 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis 
-                    dataKey="status" 
+                  <XAxis
+                    dataKey="status"
                     tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                   />
                   <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: 'var(--card)',
                       border: '1px solid var(--border)',
@@ -179,8 +180,8 @@ export default function Dashboard() {
                       color: 'var(--foreground)',
                     }}
                   />
-                  <Bar 
-                    dataKey="count" 
+                  <Bar
+                    dataKey="count"
                     fill="var(--primary)"
                     radius={[4, 4, 0, 0]}
                   />
@@ -204,13 +205,13 @@ export default function Dashboard() {
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   >
                     {pieData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={colors[entry.name as keyof typeof colors]} 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={colors[entry.name as keyof typeof colors]}
                       />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: 'var(--card)',
                       border: '1px solid var(--border)',
@@ -231,7 +232,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)]">
                   Recent Applications
                 </h3>
-                <Link 
+                <Link
                   to="/applications"
                   className="text-sm text-[var(--primary)] hover:underline flex items-center"
                 >
@@ -277,7 +278,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)]">
                   Recent Blog Posts
                 </h3>
-                <Link 
+                <Link
                   to="/blog"
                   className="text-sm text-[var(--primary)] hover:underline flex items-center"
                 >

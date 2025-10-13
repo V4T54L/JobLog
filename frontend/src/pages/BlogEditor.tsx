@@ -11,7 +11,7 @@ import {
   Image,
   Loader
 } from 'lucide-react';
-import { createBlogPost } from '../api/blog';
+import { createBlogPost } from '../services/api/blogService';
 import { CreateBlogPostData } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
@@ -62,7 +62,7 @@ export default function BlogEditor() {
       setCoverImage('');
       
       // Navigate to the new post
-      navigate(`/blog/${response.data.slug}`);
+      navigate(`/blog/${response.slug}`);
     } catch (err) {
       setError('Failed to publish post');
     } finally {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   Filter,
   Heart,
   MessageSquare,
@@ -12,7 +12,7 @@ import {
   Globe,
   Lock
 } from 'lucide-react';
-import { getBlogPosts } from '../api/blog';
+import { getAllBlogPosts } from '../services/api/blogService';
 import { BlogPost } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -34,8 +34,8 @@ export default function Blog() {
 
   const loadBlogPosts = async () => {
     try {
-      const response = await getBlogPosts(false); // Get all posts
-      setBlogPosts(response.data);
+      const response = await getAllBlogPosts(); // Get all posts
+      setBlogPosts(response);
     } catch (err) {
       setError('Failed to load blog posts');
     } finally {
@@ -46,7 +46,7 @@ export default function Blog() {
   const filterPosts = () => {
     let filtered = blogPosts.filter(post => {
       const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          post.content.toLowerCase().includes(searchTerm.toLowerCase());
+        post.content.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesVisibility = showPrivate || post.isPublic;
       return matchesSearch && matchesVisibility;
     });
@@ -73,7 +73,7 @@ export default function Blog() {
       .replace(/\n/g, ' ') // Replace newlines with spaces
       .trim();
 
-    return plainText.length > maxLength 
+    return plainText.length > maxLength
       ? plainText.substring(0, maxLength).trim() + '...'
       : plainText;
   };

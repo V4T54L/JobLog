@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { 
-  ArrowLeft, 
-  Heart, 
-  MessageSquare, 
+import {
+  ArrowLeft,
+  Heart,
+  MessageSquare,
   Send,
   Calendar,
   Globe,
   Lock,
   ThumbsUp
 } from 'lucide-react';
-import { getBlogPost, likeBlogPost, addCommentToBlogPost } from '../api/blog';
+// TODO: Replace this
+import { likeBlogPost, addCommentToBlogPost } from '../api/blog';
+import { getBlogPostBySlug } from '../services/api/blogService';
 import { BlogPost as BlogPostType, Comment } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
@@ -37,11 +39,11 @@ export default function BlogPost() {
 
   const loadBlogPost = async () => {
     if (!slug) return;
-    
+
     setLoading(true);
     try {
-      const response = await getBlogPost(slug);
-      setPost(response.data);
+      const response = await getBlogPostBySlug(slug);
+      setPost(response);
     } catch (err) {
       setError('Blog post not found');
     } finally {
@@ -143,7 +145,7 @@ export default function BlogPost() {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Blog
           </button>
-          
+
           <div className="flex items-center space-x-2">
             {post.isPublic ? (
               <div className="flex items-center text-green-600 text-sm">
@@ -205,8 +207,8 @@ export default function BlogPost() {
                   disabled={isLiking}
                   className="flex items-center space-x-2 text-[var(--muted-foreground)] hover:text-red-500 transition-colors"
                 >
-                  <Heart 
-                    className={`w-5 h-5 ${post.likes > 0 ? 'fill-current text-red-500' : ''}`} 
+                  <Heart
+                    className={`w-5 h-5 ${post.likes > 0 ? 'fill-current text-red-500' : ''}`}
                   />
                   <span>{post.likes}</span>
                 </button>
@@ -311,7 +313,7 @@ export default function BlogPost() {
                           <ThumbsUp className="w-4 h-4" />
                           <span>{comment.likes}</span>
                         </button>
-                        
+
                         {comment.replies.length > 0 && (
                           <button
                             onClick={() => toggleCommentExpansion(comment.id)}

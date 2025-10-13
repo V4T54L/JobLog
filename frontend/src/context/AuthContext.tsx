@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { AuthState, AuthAction, User } from '../types';
+import { AuthState, AuthAction } from '../types';
+import { login as apiLogin, register as apiRegister } from "../services/api/authService"
 
 interface AuthContextType {
   state: AuthState;
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Check for existing session
     const token = sessionStorage.getItem('joblog_token');
     const userData = sessionStorage.getItem('joblog_user');
-    
+
     if (token && userData) {
       try {
         const user = JSON.parse(userData);
@@ -89,30 +90,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = async (username: string, password: string) => {
-    dispatch({ type: 'LOGIN_START' });
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      if (username === 'demo' && password === 'password') {
-        const user: User = {
-          name: 'Demo User',
-          email: 'demo@joblog.com',
-          avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?w=100&h=100&fit=crop&crop=face'
-        };
-        const token = 'mock-jwt-token-' + Date.now();
-        
-        sessionStorage.setItem('joblog_token', token);
-        sessionStorage.setItem('joblog_user', JSON.stringify(user));
-        
-        dispatch({
-          type: 'LOGIN_SUCCESS',
-          payload: { user, token }
-        });
-      } else {
-        throw new Error('Invalid username or password');
-      }
+      const resp = await apiLogin({ username, password })
+
+      sessionStorage.setItem('joblog_token', resp.token);
+      sessionStorage.setItem('joblog_user', JSON.stringify(resp.user));
+
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: {
+          token: resp.token, user: {
+            name: resp.user.username,
+            email: resp.user.email,
+          }
+        }
+      });
     } catch (error) {
       dispatch({
         type: 'LOGIN_FAILURE',
@@ -123,34 +115,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const register = async (username: string, email: string, password: string, confirmPassword: string) => {
     dispatch({ type: 'REGISTER_START' });
-    
+
     try {
       // Validate inputs
       if (password !== confirmPassword) {
         throw new Error('Passwords do not match');
       }
-      
+
       if (password.length < 6) {
         throw new Error('Password must be at least 6 characters');
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const user: User = {
-        name: username,
-        email: email,
-        avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?w=100&h=100&fit=crop&crop=face'
-      };
-      const token = 'mock-jwt-token-' + Date.now();
-      
-      sessionStorage.setItem('joblog_token', token);
-      sessionStorage.setItem('joblog_user', JSON.stringify(user));
-      
-      dispatch({
-        type: 'REGISTER_SUCCESS',
-        payload: { user, token }
-      });
+      const resp = await apiRegister({ email, password, username })
+      // TODO: Add toast for registeration success
+      console.log("Registeration successful: ", resp)
+
+      // const user: User = resp;
+      // const token = 'mock-jwt-token-' + Date.now();
+
+      // sessionStorage.setItem('joblog_token', token);
+      // sessionStorage.setItem('joblog_user', JSON.stringify(user));
+
+      // dispatch({
+      //   type: 'REGISTER_SUCCESS',
+      //   payload: { user, token }
+      // });
     } catch (error) {
       dispatch({
         type: 'REGISTER_FAILURE',

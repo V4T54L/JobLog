@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, CreditCard as Edit, Trash2, Calendar, Building, User, Clock } from 'lucide-react';
-import { 
-  getApplication, 
-  updateApplicationStatus, 
-  addNoteToApplication, 
-  deleteNote 
-} from '../api/applications';
+import {
+  getApplicationById,
+  updateApplication,
+  addNoteToApplication,
+  deleteNote
+} from '../services/api/applicationService';
 import { Application, Note, CreateNoteData } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
@@ -30,11 +30,11 @@ export default function ApplicationDetail() {
 
   const loadApplication = async () => {
     if (!id) return;
-    
+
     setLoading(true);
     try {
-      const response = await getApplication(id);
-      setApplication(response.data);
+      const response = await getApplicationById(id);
+      setApplication(response);
     } catch (err) {
       setError('Application not found');
     } finally {
@@ -44,11 +44,11 @@ export default function ApplicationDetail() {
 
   const handleStatusChange = async (newStatus: Application['status']) => {
     if (!application) return;
-    
+
     setUpdatingStatus(true);
     try {
-      const response = await updateApplicationStatus(application.id, newStatus);
-      setApplication(response.data);
+      const response = await updateApplication(application.id, { status: newStatus });
+      setApplication(response);
     } catch (err) {
       setError('Failed to update status');
     } finally {
@@ -65,8 +65,8 @@ export default function ApplicationDetail() {
       const noteData: CreateNoteData = {
         content: newNote.trim()
       };
-      
-      await addNoteToApplication(application.id, noteData);
+
+      await addNoteToApplication(application.id, noteData.content);
       await loadApplication(); // Reload to get updated data
       setNewNote('');
     } catch (err) {
@@ -150,7 +150,7 @@ export default function ApplicationDetail() {
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <select
               value={application.status}
@@ -180,7 +180,7 @@ export default function ApplicationDetail() {
               <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">
                 Application Details
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -306,7 +306,7 @@ export default function ApplicationDetail() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                
+
                 {application.notes.length === 0 && (
                   <div className="text-center py-8 text-[var(--muted-foreground)]">
                     <Edit className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -329,7 +329,7 @@ export default function ApplicationDetail() {
               <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">
                 Activity Timeline
               </h3>
-              
+
               <div className="space-y-4">
                 {application.history.map((event, index) => (
                   <div key={index} className="flex items-start space-x-3">
@@ -355,7 +355,7 @@ export default function ApplicationDetail() {
               <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">
                 Quick Stats
               </h3>
-              
+
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-[var(--muted-foreground)]">Days since applied:</span>
