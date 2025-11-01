@@ -1,4 +1,3 @@
-
 package service
 
 import (
@@ -22,9 +21,10 @@ func NewBlogService(blogRepo domain.BlogRepository) *BlogService {
 }
 
 func (s *BlogService) Create(ctx context.Context, userID string, newPost domain.NewBlogPost) (*domain.BlogPost, error) {
-	// In a real app, you would fetch the user's details to get their name and avatar
-	// For this mock, we'll use a placeholder
-	authorName := "Mock User"
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
 	authorAvatar := "https://i.pravatar.cc/150"
 
 	isPublic := true
@@ -37,7 +37,7 @@ func (s *BlogService) Create(ctx context.Context, userID string, newPost domain.
 		Slug:         generateSlug(newPost.Title),
 		Title:        newPost.Title,
 		Content:      newPost.Content,
-		Author:       authorName,
+		Author:       user.Username,
 		AuthorAvatar: authorAvatar,
 		CreatedAt:    time.Now(),
 		Likes:        0,
@@ -46,7 +46,7 @@ func (s *BlogService) Create(ctx context.Context, userID string, newPost domain.
 		Comments:     []domain.Comment{},
 	}
 
-	err := s.blogRepo.Create(ctx, post)
+	err = s.blogRepo.Create(ctx, post)
 	if err != nil {
 		return nil, err
 	}

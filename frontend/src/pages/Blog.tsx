@@ -35,7 +35,9 @@ export default function Blog() {
   const loadBlogPosts = async () => {
     try {
       const response = await getAllBlogPosts(); // Get all posts
-      setBlogPosts(response);
+      if (response) {
+        setBlogPosts(response);
+      }
     } catch (err) {
       setError('Failed to load blog posts');
     } finally {
@@ -244,7 +246,7 @@ export default function Blog() {
                         </div>
                         <div className="flex items-center">
                           <MessageSquare className="w-4 h-4 mr-1" />
-                          {post.comments.length}
+                          {post.comments?.length || 0}
                         </div>
                       </div>
                       <Link

@@ -1,10 +1,10 @@
-
 package service
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"joblog/internal/core/domain"
 	"joblog/pkg/auth"
@@ -33,9 +33,11 @@ func (s *AuthService) Register(ctx context.Context, reg domain.UserRegistration)
 
 	// Check if user already exists
 	if _, err := s.userRepo.GetByEmail(ctx, reg.Email); err == nil {
+		log.Println("[Register] Error: ", err)
 		return nil, fmt.Errorf("user with email %s already exists", reg.Email)
 	}
 	if _, err := s.userRepo.GetByUsername(ctx, reg.Username); err == nil {
+		log.Println("[Register] Error: ", err)
 		return nil, fmt.Errorf("user with username %s already exists", reg.Username)
 	}
 
@@ -63,11 +65,13 @@ func (s *AuthService) Register(ctx context.Context, reg domain.UserRegistration)
 func (s *AuthService) Login(ctx context.Context, login domain.UserLogin) (*domain.AuthResponse, error) {
 	user, err := s.userRepo.GetByUsername(ctx, login.Username)
 	if err != nil {
+		log.Println("[Login] Error: ", err)
 		return nil, errors.New("invalid username or password")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(login.Password))
 	if err != nil {
+		log.Println("[Login] Error: ", err)
 		return nil, errors.New("invalid username or password")
 	}
 

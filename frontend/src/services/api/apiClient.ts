@@ -4,7 +4,7 @@ import { getToken, removeToken } from './tokenService';
 
 // Create a central Axios instance with a base URL
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: 'https://sturdy-space-invention-67jww9rprq9f5xq7-8080.app.github.dev/api',
   headers: {
     'Content-Type': 'application/json',
   },

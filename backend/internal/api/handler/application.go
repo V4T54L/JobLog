@@ -1,8 +1,8 @@
-
 package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"joblog/internal/core/domain"
@@ -24,6 +24,7 @@ func (h *ApplicationHandler) GetAllApplications(w http.ResponseWriter, r *http.R
 	userID := r.Context().Value("userID").(string)
 	apps, err := h.appService.GetAllByUserID(r.Context(), userID)
 	if err != nil {
+		log.Println("[AppHandler.GetAllApplications] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusInternalServerError, "Could not fetch applications")
 		return
 	}
@@ -40,6 +41,7 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 
 	createdApp, err := h.appService.Create(r.Context(), userID, newApp)
 	if err != nil {
+		log.Println("[AppHandler.CreateApplication] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusInternalServerError, "Could not create application")
 		return
 	}
@@ -53,6 +55,7 @@ func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.R
 
 	app, err := h.appService.GetByID(r.Context(), userID, appID)
 	if err != nil {
+		log.Println("[AppHandler.GetApplicationByID] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
@@ -65,6 +68,7 @@ func (h *ApplicationHandler) UpdateApplication(w http.ResponseWriter, r *http.Re
 
 	var updateData domain.ApplicationUpdate
 	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+		log.Println("[AppHandler.UpdateApplicationByID] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
@@ -83,6 +87,7 @@ func (h *ApplicationHandler) ArchiveApplication(w http.ResponseWriter, r *http.R
 
 	err := h.appService.Archive(r.Context(), userID, appID)
 	if err != nil {
+		log.Println("[AppHandler.ArchieveApplicationByID] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
@@ -97,6 +102,7 @@ func (h *ApplicationHandler) AddNote(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&noteContent); err != nil {
+		log.Println("[AppHandler.AddNote] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
@@ -118,6 +124,7 @@ func (h *ApplicationHandler) UpdateNote(w http.ResponseWriter, r *http.Request) 
 		Content string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&noteContent); err != nil {
+		log.Println("[AppHandler.UpdateNote] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
@@ -136,6 +143,7 @@ func (h *ApplicationHandler) DeleteNote(w http.ResponseWriter, r *http.Request) 
 	noteID := chi.URLParam(r, "noteId")
 
 	if err := h.appService.DeleteNote(r.Context(), userID, appID, noteID); err != nil {
+		log.Println("[AppHandler.DeleteNote] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}

@@ -1,8 +1,8 @@
-
 package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"joblog/internal/core/domain"
@@ -23,9 +23,11 @@ func NewBlogHandler(blogService *service.BlogService) *BlogHandler {
 func (h *BlogHandler) GetAllBlogPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := h.blogService.GetAll(r.Context())
 	if err != nil {
+		log.Println("[BlogH.GetAll] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusInternalServerError, "Could not fetch blog posts")
 		return
 	}
+	log.Println("Posts:", posts)
 	jsonutil.RespondWithJSON(w, http.StatusOK, posts)
 }
 
@@ -33,6 +35,7 @@ func (h *BlogHandler) GetBlogPostBySlug(w http.ResponseWriter, r *http.Request) 
 	slug := chi.URLParam(r, "slug")
 	post, err := h.blogService.GetBySlug(r.Context(), slug)
 	if err != nil {
+		log.Println("[BlogH.GetBySlug] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
@@ -49,6 +52,7 @@ func (h *BlogHandler) CreateBlogPost(w http.ResponseWriter, r *http.Request) {
 
 	createdPost, err := h.blogService.Create(r.Context(), userID, newPost)
 	if err != nil {
+		log.Println("[BlogH.Create] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusInternalServerError, "Could not create blog post")
 		return
 	}

@@ -1,9 +1,9 @@
-
 package service
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"joblog/internal/core/domain"
@@ -48,6 +48,7 @@ func (s *ApplicationService) GetAllByUserID(ctx context.Context, userID string) 
 func (s *ApplicationService) GetByID(ctx context.Context, userID, appID string) (*domain.Application, error) {
 	app, err := s.repo.GetByID(ctx, appID)
 	if err != nil {
+		log.Println("[ApplicationService.GetByID] Error: ", err)
 		return nil, fmt.Errorf("application not found")
 	}
 	if app.UserID != userID {

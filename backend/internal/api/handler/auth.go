@@ -1,8 +1,8 @@
-
 package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"joblog/internal/core/domain"
@@ -27,6 +27,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.authService.Register(r.Context(), regDetails)
 	if err != nil {
+		log.Println("[AuthH.Register] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -43,6 +44,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	authResponse, err := h.authService.Login(r.Context(), loginDetails)
 	if err != nil {
+		log.Println("[AuthH.Login] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -59,6 +61,7 @@ func (h *AuthHandler) GetMyProfile(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.authService.GetUserProfile(r.Context(), userID)
 	if err != nil {
+		log.Println("[AuthH.GetProfile] Error:", err)
 		jsonutil.RespondWithError(w, http.StatusNotFound, "User not found")
 		return
 	}

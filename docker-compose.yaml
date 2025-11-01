@@ -6,7 +6,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgres://user:password@postgres:5432/joblog?sslmode=disable
 
@@ -20,7 +21,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ./backend/migrations/:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
